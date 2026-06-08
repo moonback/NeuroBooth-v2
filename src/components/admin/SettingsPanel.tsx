@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Settings, AppTheme, VideoQuality, CameraFacing } from '../../types';
-import { Upload, RotateCcw } from 'lucide-react';
+import { Upload, RotateCcw, Palette, Zap, Crown, Sparkles, Check } from 'lucide-react';
 import { Toggle, AdminSection, AdminInput, AdminButton } from './ui';
 
 interface SettingsPanelProps {
@@ -8,11 +8,17 @@ interface SettingsPanelProps {
   updateSettings: (patch: Partial<Settings>) => void;
 }
 
-const THEMES: { value: AppTheme; label: string; color: string }[] = [
-  { value: 'dark',    label: 'Sombre',   color: '#1e40af' },
-  { value: 'neon',    label: 'Neon',     color: '#16a34a' },
-  { value: 'elegant', label: 'Elegant',  color: '#92400e' },
-  { value: 'party',   label: 'Party',    color: '#7c3aed' },
+const THEMES: { 
+  value: AppTheme; 
+  label: string; 
+  color: string; 
+  icon: React.ReactNode;
+  description: string;
+}[] = [
+  { value: 'dark',    label: 'Sombre',   color: '#1e40af', icon: <Palette size={18} />, description: "Thème minimaliste et professionnel" },
+  { value: 'neon',    label: 'Neon',     color: '#16a34a', icon: <Zap size={18} />, description: "Futuriste avec des tons verts" },
+  { value: 'elegant', label: 'Elegant',  color: '#92400e', icon: <Crown size={18} />, description: "Luxueux avec accents dorés" },
+  { value: 'party',   label: 'Party',    color: '#7c3aed', icon: <Sparkles size={18} />, description: "Fun avec un dégradé animé" },
 ];
 
 const QUALITIES: { value: VideoQuality; label: string }[] = [
@@ -235,20 +241,49 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
       </AdminSection>
 
       <AdminSection title="Thème visuel">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {THEMES.map(t => (
             <button
               key={t.value}
               onClick={() => updateSettings({ theme: t.value })}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all border ${
+              className={`group relative flex flex-col items-start gap-3 p-5 rounded-2xl border text-left transition-all ${
                 settings.theme === t.value
-                  ? 'border-transparent text-white ring-2 ring-white/20'
-                  : 'border-white/10 text-white/50 hover:border-white/30 hover:text-white/80'
+                  ? 'border-white/30 ring-2 ring-white/15 shadow-lg shadow-black/20'
+                  : 'border-white/10 hover:border-white/25'
               }`}
-              style={{ background: settings.theme === t.value ? t.color + '40' : undefined }}
             >
-              <span className="w-4 h-4 rounded-full" style={{ background: t.color }} />
-              {t.label}
+              {/* Top Bar Preview */}
+              <div className="w-full flex items-center justify-between">
+                <div 
+                  className="flex items-center gap-2 p-2 rounded-lg"
+                  style={{ 
+                    backgroundColor: settings.theme === t.value ? t.color + '20' : 'rgba(255,255,255,0.05)',
+                    color: settings.theme === t.value ? 'white' : 'rgba(255,255,255,0.5)'
+                  }}
+                >
+                  {t.icon}
+                  <span className="text-sm font-semibold">{t.label}</span>
+                </div>
+                {settings.theme === t.value ? (
+                  <div className="p-1.5 rounded-full" style={{ backgroundColor: t.color }}>
+                    <Check size={14} className="text-white" />
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border border-white/10" />
+                )}
+              </div>
+
+              {/* Description */}
+              <p className={`text-xs ${settings.theme === t.value ? 'text-white/70' : 'text-white/40'}`}>
+                {t.description}
+              </p>
+
+              {/* Color Preview */}
+              <div className="w-full h-1.5 rounded-full overflow-hidden flex">
+                <div className="h-full w-1/3" style={{ backgroundColor: t.color }} />
+                <div className="h-full w-1/3" style={{ backgroundColor: t.color, opacity: 0.6 }} />
+                <div className="h-full w-1/3" style={{ backgroundColor: t.color, opacity: 0.3 }} />
+              </div>
             </button>
           ))}
         </div>
