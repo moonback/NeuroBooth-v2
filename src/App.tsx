@@ -6,6 +6,7 @@ import { CaptureScreen } from './components/CaptureScreen';
 import { PreviewScreen } from './components/PreviewScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { PinModal } from './components/PinModal';
+import { ProcessingModal } from './components/ProcessingModal';
 
 function AppInner() {
   const { screen, setScreen, settings, adminUnlocked } = useApp();
@@ -37,6 +38,8 @@ function AppInner() {
           onSuccess={() => { setShowPin(false); setScreen('admin'); }}
         />
       )}
+      
+      <ProcessingModal />
     </div>
   );
 }

@@ -10,6 +10,7 @@ export async function applySlowMotion(
   videoBlob: Blob,
   options: SlowMotionOptions,
   originalDurationSeconds: number,
+  onProgress?: (progress: number) => void,
 ): Promise<Blob> {
   logger.info('Starting slow motion video processing', { options, originalDurationSeconds });
   return new Promise((resolve, reject) => {
@@ -20,6 +21,13 @@ export async function applySlowMotion(
     video.preload = 'auto';
 
     const originalDuration = originalDurationSeconds;
+    const slowStart = (options.slowMotionStartPercent / 100) * originalDuration;
+    const slowDuration = (options.slowMotionDurationPercent / 100) * originalDuration;
+    const slowEnd = Math.min(slowStart + slowDuration, originalDuration);
+    const normalPart1 = slowStart;
+    const slowPart = slowDuration / options.slowMotionFactor;
+    const normalPart2 = originalDuration - slowEnd;
+    const newDuration = normalPart1 + slowPart + normalPart2;
 
     video.onloadedmetadata = async () => {
       logger.info('Video metadata loaded', {
@@ -41,21 +49,12 @@ export async function applySlowMotion(
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      const slowStart = (options.slowMotionStartPercent / 100) * originalDuration;
-      const slowDuration = (options.slowMotionDurationPercent / 100) * originalDuration;
-      const slowEnd = Math.min(slowStart + slowDuration, originalDuration);
-
       logger.debug('Calculated slow motion timings', {
         originalDuration,
         slowStart,
         slowDuration,
         slowEnd,
       });
-
-      const normalPart1 = slowStart;
-      const slowPart = slowDuration / options.slowMotionFactor;
-      const normalPart2 = originalDuration - slowEnd;
-      const newDuration = normalPart1 + slowPart + normalPart2;
       logger.debug('Estimated new duration after slow motion', { newDuration });
 
       const stream = canvas.captureStream(30);
@@ -98,8 +97,20 @@ export async function applySlowMotion(
       };
 
       video.addEventListener('timeupdate', () => {
-        // Update playback rate based on current time
         const currentTime = video.currentTime;
+        const totalEstimatedTime = newDuration;
+        
+        let processedTime = 0;
+        if (currentTime < slowStart) {
+          processedTime = currentTime;
+        } else if (currentTime < slowEnd) {
+          processedTime = normalPart1 + (currentTime - slowStart) / options.slowMotionFactor;
+        } else {
+          processedTime = normalPart1 + slowPart + (currentTime - slowEnd);
+        }
+        
+        const progress = Math.min(100, Math.max(0, (processedTime / totalEstimatedTime) * 100));
+        if (onProgress) onProgress(progress);
         
         if (currentTime >= slowStart && currentTime < slowEnd) {
           if (video.playbackRate !== options.slowMotionFactor) {
@@ -116,6 +127,7 @@ export async function applySlowMotion(
 
       video.addEventListener('ended', () => {
         logger.info('Original video ended, stopping recorder');
+        if (onProgress) onProgress(100);
         video.pause();
         recorder.stop();
         isRecording = false;

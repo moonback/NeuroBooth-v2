@@ -57,6 +57,9 @@ interface AppContextValue {
   isOnline: boolean;
   retryUpload: (id: string) => Promise<void>;
   syncFromCloud: () => Promise<void>;
+  isProcessing: boolean;
+  processingProgress: number;
+  setProcessingProgress: (progress: number) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -76,6 +79,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [uploadStates, setUploadStates] = useState<Record<string, UploadState>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
 
   // ── Online / Offline ─────────────────────────────────────────────────────
@@ -185,6 +190,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let processedBlob = blob;
     let newDuration = duration;
 
+    setIsProcessing(true);
+    setProcessingProgress(0);
+
     if (settings.slowMotionEnabled) {
       logger.info('AppContext: applying slow motion');
       try {
@@ -192,7 +200,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           slowMotionFactor: settings.slowMotionFactor,
           slowMotionStartPercent: settings.slowMotionStartPercent,
           slowMotionDurationPercent: settings.slowMotionDurationPercent,
-        }, duration);
+        }, duration, (progress) => {
+          setProcessingProgress(progress);
+        });
         
         // Calculate new duration based on slow motion settings
         const normalPart1 = (settings.slowMotionStartPercent / 100) * duration;
@@ -223,6 +233,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await saveCapture(record);
     setCaptures(prev => [record, ...prev]);
     setCurrentCapture(record);
+    
+    setIsProcessing(false);
+    setProcessingProgress(0);
+    
     logger.info('AppContext: switching to preview screen');
     setScreen('preview');
 
@@ -324,6 +338,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isOnline,
       retryUpload,
       syncFromCloud,
+      isProcessing,
+      processingProgress,
+      setProcessingProgress,
     }}>
       {children}
     </AppContext.Provider>
