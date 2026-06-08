@@ -6,6 +6,9 @@ import {
   WifiOff,
   ChevronRight,
   Zap,
+  Sparkles,
+  Timer,
+  RotateCw,
 } from 'lucide-react';
 
 interface WelcomeScreenProps {
@@ -15,37 +18,42 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   const { settings, startNewCapture, isOnline } = useApp();
 
+  const handleStart = () => {
+    navigator.vibrate?.(35);
+    startNewCapture();
+  };
+
   return (
-    <div className="welcome-screen theme-bg flex flex-col items-center justify-between min-h-screen w-full p-6 relative overflow-hidden">
+    <div className="welcome-screen theme-bg soft-grid flex min-h-[100dvh] w-full flex-col items-center justify-between overflow-hidden relative">
       {/* Animated background rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-80">
         <div className="ring ring-1" />
         <div className="ring ring-2" />
         <div className="ring ring-3" />
         <div className="ring ring-4" />
       </div>
+      <div className="absolute -top-28 -right-24 h-72 w-72 rounded-full theme-accent-bg opacity-20 blur-3xl" />
+      <div className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-white opacity-[0.06] blur-3xl" />
 
       {/* Top bar */}
-      <div className="w-full flex justify-between items-center z-10">
-        <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+      <div className="z-10 flex w-full items-center justify-between gap-3">
+        <div className="status-pill border-white/10 bg-black/20 text-white/70 shadow-lg">
           {isOnline
-            ? <Wifi size={14} className="text-emerald-400" />
-            : <WifiOff size={14} className="text-yellow-400" />}
-          <span className={isOnline ? 'text-emerald-400' : 'text-yellow-400'}>
-            {isOnline ? 'En ligne' : 'Hors ligne'}
-          </span>
+            ? <Wifi size={15} className="text-emerald-400" />
+            : <WifiOff size={15} className="text-yellow-400" />}
+          <span>{isOnline ? 'Prêt à partager' : 'Mode hors ligne'}</span>
         </div>
         <button
           onClick={onAdmin}
-          className="p-3 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
+          className="touch-target pressable grid place-items-center rounded-2xl border border-white/10 bg-white/5 text-white/55 shadow-lg hover:bg-white/10 hover:text-white"
           aria-label="Panneau admin"
         >
-          <Settings size={20} />
+          <Settings size={21} />
         </button>
       </div>
 
       {/* Center content */}
-      <div className="flex flex-col items-center gap-10 z-10 flex-1 justify-center">
+      <main className="z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-6 py-8 text-center sm:max-w-2xl">
         {/* Logo */}
         <div className="relative animate-float">
           {settings.eventLogo ? (
@@ -53,50 +61,71 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
               <img
                 src={settings.eventLogo}
                 alt="Logo"
-                className="w-36 h-36 object-contain rounded-3xl shadow-2xl"
+                className="h-28 w-28 rounded-[2rem] object-contain shadow-2xl sm:h-36 sm:w-36"
               />
-              <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
+              <div className="absolute -inset-3 rounded-[2.25rem] border-2 theme-accent-border opacity-30" />
             </div>
           ) : (
             <div className="relative">
-              <div className="w-36 h-36 rounded-3xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-accent/40">
-                <Camera size={64} className="text-white" />
+              <div className="grid h-28 w-28 place-items-center rounded-[2rem] theme-accent-bg shadow-2xl sm:h-36 sm:w-36">
+                <Camera size={56} className="text-white sm:h-16 sm:w-16" />
               </div>
-              <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
+              <div className="absolute -inset-3 rounded-[2.25rem] border-2 theme-accent-border opacity-30" />
             </div>
           )}
         </div>
 
         {/* Event name */}
-        <div className="text-center animate-bounce-in">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight mb-2">
+        <div className="animate-bounce-in space-y-3">
+          <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[0.25em] text-white/55">
+            <Zap size={15} className="text-yellow-300" />
+            Photobooth 360°
+          </div>
+          <h1 className="text-4xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl">
             {settings.eventName}
           </h1>
-          <p className="text-white/40 text-base tracking-widest uppercase flex items-center justify-center gap-2">
-            <Zap size={16} className="text-yellow-400" />
-            Photobooth 360°
+          <p className="mx-auto max-w-xs text-sm leading-relaxed text-white/55 sm:max-w-lg sm:text-base">
+            Une expérience guidée en 3 étapes : préparez-vous, tournez, récupérez votre vidéo instantanément.
           </p>
+        </div>
+
+        {/* UX guide */}
+        <div className="grid w-full grid-cols-3 gap-2 sm:gap-3">
+          {[
+            { icon: <Timer size={17} />, label: 'Compte à rebours' },
+            { icon: <RotateCw size={17} />, label: 'Capture 360°' },
+            { icon: <Sparkles size={17} />, label: 'QR code' },
+          ].map((step, index) => (
+            <div key={step.label} className="glass-panel rounded-2xl p-3 text-center">
+              <div className="mx-auto mb-2 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white">
+                {step.icon}
+              </div>
+              <p className="text-[11px] font-semibold leading-tight text-white/65">
+                {index + 1}. {step.label}
+              </p>
+            </div>
+          ))}
         </div>
 
         {/* CTA */}
         <button
-          onClick={startNewCapture}
-          className="cta-button group relative mt-2 px-14 py-5 rounded-full text-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-105 active:scale-[0.98] animate-bounce-in"
+          onClick={handleStart}
+          className="cta-button touch-target pressable group relative mt-1 flex w-full items-center justify-center overflow-hidden rounded-[1.75rem] px-8 py-5 text-xl font-black text-white shadow-2xl sm:w-auto sm:px-16"
         >
           <span className="relative z-10 flex items-center gap-3">
             Commencer
-            <ChevronRight size={24} className="group-hover:translate-x-2 transition-transform" />
+            <ChevronRight size={25} className="transition-transform group-hover:translate-x-2" />
           </span>
           <div className="cta-shine" />
         </button>
 
-        <p className="text-white/30 text-sm animate-bounce-in">
-          Appuyez pour lancer votre expérience 360°
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/30">
+          Touchez pour lancer l'expérience
         </p>
-      </div>
+      </main>
 
       {/* Bottom */}
-      <div className="z-10 text-white/15 text-xs">
+      <div className="z-10 flex w-full items-center justify-center text-white/20 text-xs">
         Photobooth 360 &copy; {new Date().getFullYear()}
       </div>
     </div>

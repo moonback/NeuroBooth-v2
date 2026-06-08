@@ -16,10 +16,10 @@ export function AdminPanel() {
   };
 
   return (
-    <div className="theme-bg min-h-screen flex flex-col">
+    <div className="theme-bg soft-grid flex min-h-[100dvh] flex-col">
       <AdminHeader onBack={handleBack} isOnline={isOnline} />
       <AdminTabBar activeTab={tab} onTabChange={setTab} />
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full">
+      <div className="mx-auto w-full max-w-4xl flex-1 overflow-y-auto px-4 py-5 pb-8 sm:px-6 sm:py-6">
         {tab === 'settings' && <SettingsPanel settings={settings} updateSettings={updateSettings} />}
         {tab === 'gallery'  && <GalleryPanel />}
         {tab === 'stats'    && <StatsPanel />}

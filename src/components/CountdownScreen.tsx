@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Camera } from 'lucide-react';
+import { ArrowLeft, Camera, Timer } from 'lucide-react';
 
 export function CountdownScreen() {
   const { settings, setScreen } = useApp();
@@ -22,7 +22,9 @@ export function CountdownScreen() {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + duration);
-    } catch {}
+    } catch {
+      return;
+    }
   };
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export function CountdownScreen() {
   const circumference = 2 * Math.PI * 90;
 
   return (
-    <div className="theme-bg flex flex-col items-center justify-center min-h-screen w-full gap-10 p-6">
+    <div className="theme-bg soft-grid mobile-safe relative flex min-h-[100dvh] w-full flex-col items-center justify-center gap-7 overflow-hidden">
       {/* Animated background rings - decorative */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
         <div className="ring ring-1 opacity-30" />
@@ -48,17 +50,21 @@ export function CountdownScreen() {
       </div>
 
       <div className="relative z-10 text-center animate-bounce-in">
-        <Camera size={32} className="text-white/30 mx-auto mb-4" />
-        <p className="text-white/70 text-2xl font-semibold tracking-wider uppercase">
-          Préparez-vous...
-        </p>
+        <div className="glass-panel mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl">
+          <Camera size={28} className="theme-accent-text" />
+        </div>
+        <p className="text-white/45 text-xs font-bold uppercase tracking-[0.35em]">Étape 1/3</p>
+        <h2 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">
+          Préparez-vous
+        </h2>
+        <p className="mt-2 text-sm text-white/55">Regardez l'objectif, le départ est automatique.</p>
       </div>
 
-      <div className="relative z-10 w-72 h-72">
+      <div className="relative z-10 h-64 w-64 sm:h-72 sm:w-72">
         {/* Outer glow circle */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 animate-pulse" />
         
-        <svg className="absolute inset-0 -rotate-90" width="288" height="288" viewBox="0 0 256 256">
+        <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 256 256">
           <circle cx="128" cy="128" r="90" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="10" />
           <circle
             cx="128" cy="128" r="90"
@@ -74,25 +80,27 @@ export function CountdownScreen() {
         
         <div className="absolute inset-0 flex items-center justify-center">
           {count === 0 ? (
-            <span className="text-9xl font-black text-white animate-ping-once drop-shadow-lg">GO!</span>
+            <span className="text-7xl font-black text-white animate-ping-once drop-shadow-lg sm:text-9xl">GO!</span>
           ) : (
-            <span className="text-[10rem] font-black text-white countdown-number drop-shadow-xl">
+            <span className="text-8xl font-black text-white countdown-number drop-shadow-xl sm:text-[10rem]">
               {count}
             </span>
           )}
         </div>
       </div>
 
-      <div className="relative z-10 text-center animate-bounce-in">
-        <p className="text-white/40 text-base">
-          L'enregistrement commence automatiquement
+      <div className="glass-panel relative z-10 flex items-center gap-3 rounded-2xl px-4 py-3 text-left animate-bounce-in">
+        <Timer size={20} className="theme-accent-text shrink-0" />
+        <p className="text-sm font-medium text-white/65">
+          L'enregistrement commence automatiquement. Restez au centre du plateau.
         </p>
       </div>
 
       <button
         onClick={() => setScreen('welcome')}
-        className="relative z-10 mt-2 px-8 py-3 rounded-full border border-white/25 bg-white/5 text-white/50 hover:text-white hover:border-white/50 hover:bg-white/10 transition-all duration-300 text-sm font-medium backdrop-blur-sm"
+        className="touch-target pressable relative z-10 mt-2 flex items-center gap-2 rounded-2xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-bold text-white/60 backdrop-blur-sm hover:border-white/45 hover:bg-white/10 hover:text-white"
       >
+        <ArrowLeft size={17} />
         Annuler
       </button>
     </div>
