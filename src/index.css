@@ -16,50 +16,46 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
 
 /* ===== Theme: Dark (default) ===== */
 .theme-dark {
-  --accent: #60a5fa;
-  --accent-glow: rgba(96,165,250,0.34);
-  --accent-dim: rgba(96,165,250,0.16);
-  --bg: #020617;
-  --bg-card: #0f172a;
-  --bg-grad: radial-gradient(circle at 20% 10%, rgba(96,165,250,0.18), transparent 28rem), linear-gradient(135deg, #020617 0%, #0f172a 54%, #1e3a8a 140%);
-  --ring-color: rgba(96,165,250,0.1);
+  --accent: #3b82f6;
+  --accent-glow: rgba(59,130,246,0.3);
+  --accent-dim: rgba(59,130,246,0.15);
+  --bg: #0a0a0a;
+  --bg-card: #1a1a1a;
+  --ring-color: rgba(59,130,246,0.08);
 }
 
 /* ===== Theme: Neon ===== */
 .theme-neon {
   --accent: #00ff87;
-  --accent-glow: rgba(0,255,135,0.38);
-  --accent-dim: rgba(0,255,135,0.14);
-  --bg: #020403;
-  --bg-card: #07140d;
-  --bg-grad: radial-gradient(circle at 22% 12%, rgba(0,255,135,0.18), transparent 28rem), linear-gradient(135deg, #020403 0%, #052e1b 58%, #00ff87 150%);
-  --ring-color: rgba(0,255,135,0.08);
+  --accent-glow: rgba(0,255,135,0.3);
+  --accent-dim: rgba(0,255,135,0.12);
+  --bg: #050505;
+  --bg-card: #111;
+  --ring-color: rgba(0,255,135,0.06);
 }
 
 /* ===== Theme: Elegant ===== */
 .theme-elegant {
-  --accent: #f0c97a;
-  --accent-glow: rgba(240,201,122,0.34);
-  --accent-dim: rgba(240,201,122,0.13);
-  --bg: #080605;
-  --bg-card: #17110a;
-  --bg-grad: radial-gradient(circle at 22% 10%, rgba(240,201,122,0.16), transparent 28rem), linear-gradient(135deg, #080605 0%, #2a1d0d 56%, #d4a054 145%);
-  --ring-color: rgba(240,201,122,0.08);
+  --accent: #d4a054;
+  --accent-glow: rgba(212,160,84,0.3);
+  --accent-dim: rgba(212,160,84,0.12);
+  --bg: #080808;
+  --bg-card: #161410;
+  --ring-color: rgba(212,160,84,0.07);
 }
 
 /* ===== Theme: Party ===== */
 .theme-party {
-  --accent: #fb7185;
-  --accent-glow: rgba(251,113,133,0.38);
-  --accent-dim: rgba(251,113,133,0.15);
-  --bg: #16051d;
-  --bg-card: #201026;
-  --bg-grad: radial-gradient(circle at 20% 10%, rgba(251,113,133,0.18), transparent 28rem), linear-gradient(135deg, #16051d 0%, #7c3aed 48%, #f97316 145%);
-  --ring-color: rgba(251,113,133,0.09);
+  --accent: #f43f5e;
+  --accent-glow: rgba(244,63,94,0.35);
+  --accent-dim: rgba(244,63,94,0.14);
+  --bg: #06040a;
+  --bg-card: #180f18;
+  --ring-color: rgba(244,63,94,0.08);
 }
 
 /* ===== Theme utilities ===== */
-.theme-bg { background: var(--bg-grad, var(--bg)); }
+.theme-bg { background-color: var(--bg); }
 .theme-card-bg { background-color: var(--bg-card); }
 
 .theme-accent-bg { background-color: var(--accent) !important; }
