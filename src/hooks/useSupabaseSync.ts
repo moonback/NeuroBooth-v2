@@ -5,7 +5,6 @@ import {
   uploadToCloud,
   saveCaptureToDb,
   updateCapture,
-  fetchCapturesFromCloud,
   UploadProgress,
 } from '../lib/storage';
 import { CaptureRecord } from '../types';
@@ -88,7 +87,9 @@ export function useSupabaseSync(isOnline: boolean, callbacks: SyncCallbacks) {
 
     channelRef.current = channel;
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
       channelRef.current = null;
     };
   }, []);

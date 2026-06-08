@@ -153,7 +153,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
   };
 
-  const { retryPending } = useSupabaseSync(isOnline, syncCallbacks);
+  useSupabaseSync(isOnline, syncCallbacks);
 
   // ── Capture flow ──────────────────────────────────────────────────────────
   const startNewCapture = useCallback(() => {

@@ -149,4 +149,14 @@ declare global {
     filters?: Array<{ namePrefix?: string; services?: string[] }>;
     optionalServices?: string[];
   }
+  interface BluetoothDevice {
+    gatt: { 
+      connect: () => Promise<{ getPrimaryService: (uuid: string) => Promise<{ getCharacteristic: (uuid: string) => Promise<BluetoothRemoteGATTCharacteristic> }> }>;
+      disconnect: () => void;
+    } | null;
+    addEventListener: (type: string, listener: () => void) => void;
+  }
+  interface BluetoothRemoteGATTCharacteristic {
+    writeValue: (value: Uint8Array) => Promise<void>;
+  }
 }

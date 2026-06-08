@@ -9,7 +9,6 @@ import {
   Image,
   BarChart2,
   Cpu,
-  X,
   Lock,
   ArrowLeft,
   Wifi,

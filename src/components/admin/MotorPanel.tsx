@@ -9,7 +9,6 @@ import {
   Square,
   RotateCcw,
   RotateCw,
-  Wifi,
   AlertCircle,
   Loader,
 } from 'lucide-react';
