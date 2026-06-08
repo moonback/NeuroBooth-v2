@@ -1,0 +1,78 @@
+export type AppScreen = 'welcome' | 'countdown' | 'capture' | 'preview' | 'admin';
+
+export type VideoQuality = 'low' | 'medium' | 'high' | '4k';
+
+export type AppTheme = 'dark' | 'neon' | 'elegant' | 'party';
+
+export type CameraFacing = 'user' | 'environment';
+
+export type MotorDirection = 'cw' | 'ccw';
+
+export type MotorConnectionType = 'serial' | 'bluetooth' | 'none';
+
+export interface Settings {
+  eventName: string;
+  eventLogo: string; // base64 data URL
+  captureDuration: number; // seconds
+  countdownDuration: number; // seconds
+  videoQuality: VideoQuality;
+  soundEnabled: boolean;
+  theme: AppTheme;
+  kioskMode: boolean;
+  kioskPin: string;
+  motorEnabled: boolean;
+  motorSpeed: number; // 0-100
+  motorDirection: MotorDirection;
+  motorSyncRecording: boolean;
+  cameraFacing: CameraFacing;
+  showWatermark: boolean;
+  watermarkText: string;
+}
+
+export interface CaptureRecord {
+  id: string;
+  eventName: string;
+  videoBlob?: Blob;
+  videoUrl?: string; // Supabase URL after upload
+  thumbnailUrl?: string;
+  duration: number;
+  shared: boolean;
+  createdAt: Date;
+  uploadedToCloud: boolean;
+}
+
+export interface Stats {
+  totalCaptures: number;
+  totalShared: number;
+  capturesThisHour: number;
+  capturesToday: number;
+  averageDuration: number;
+  pendingUploads: number;
+  cloudCaptures: number;
+}
+
+export const QUALITY_CONSTRAINTS: Record<VideoQuality, MediaTrackConstraints> = {
+  low:    { width: 640,  height: 480,  frameRate: 24 },
+  medium: { width: 1280, height: 720,  frameRate: 30 },
+  high:   { width: 1920, height: 1080, frameRate: 30 },
+  '4k':   { width: 3840, height: 2160, frameRate: 30 },
+};
+
+export const DEFAULT_SETTINGS: Settings = {
+  eventName: 'Photobooth 360',
+  eventLogo: '',
+  captureDuration: 10,
+  countdownDuration: 3,
+  videoQuality: 'high',
+  soundEnabled: true,
+  theme: 'dark',
+  kioskMode: false,
+  kioskPin: '1234',
+  motorEnabled: false,
+  motorSpeed: 50,
+  motorDirection: 'cw',
+  motorSyncRecording: true,
+  cameraFacing: 'environment',
+  showWatermark: true,
+  watermarkText: '',
+};

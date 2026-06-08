@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Base Reset ===== */
+* { -webkit-tap-highlight-color: transparent; }
+html, body { overscroll-behavior: none; }
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+/* ===== App root ===== */
+.app-root {
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== Theme: Dark (default) ===== */
+.theme-dark {
+  --accent: #3b82f6;
+  --accent-glow: rgba(59,130,246,0.3);
+  --accent-dim: rgba(59,130,246,0.15);
+  --bg: #0a0a0a;
+  --bg-card: #1a1a1a;
+  --ring-color: rgba(59,130,246,0.08);
+}
+
+/* ===== Theme: Neon ===== */
+.theme-neon {
+  --accent: #00ff87;
+  --accent-glow: rgba(0,255,135,0.3);
+  --accent-dim: rgba(0,255,135,0.12);
+  --bg: #050505;
+  --bg-card: #111;
+  --ring-color: rgba(0,255,135,0.06);
+}
+
+/* ===== Theme: Elegant ===== */
+.theme-elegant {
+  --accent: #d4a054;
+  --accent-glow: rgba(212,160,84,0.3);
+  --accent-dim: rgba(212,160,84,0.12);
+  --bg: #080808;
+  --bg-card: #161410;
+  --ring-color: rgba(212,160,84,0.07);
+}
+
+/* ===== Theme: Party ===== */
+.theme-party {
+  --accent: #f43f5e;
+  --accent-glow: rgba(244,63,94,0.35);
+  --accent-dim: rgba(244,63,94,0.14);
+  --bg: #06040a;
+  --bg-card: #180f18;
+  --ring-color: rgba(244,63,94,0.08);
+}
+
+/* ===== Theme utilities ===== */
+.theme-bg { background-color: var(--bg); }
+.theme-card-bg { background-color: var(--bg-card); }
+
+.theme-accent-bg { background-color: var(--accent) !important; }
+.theme-accent-border { border-color: var(--accent) !important; }
+.theme-accent-stroke { stroke: var(--accent) !important; }
+.theme-accent-text { color: var(--accent) !important; }
+
+/* ===== Animated rings on welcome screen ===== */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--ring-color);
+  animation: expand 6s ease-out infinite;
+}
+.ring-1 { width: 300px;  height: 300px;  animation-delay: 0s; }
+.ring-2 { width: 550px;  height: 550px;  animation-delay: 1.5s; }
+.ring-3 { width: 800px;  height: 800px;  animation-delay: 3s; }
+.ring-4 { width: 1100px; height: 1100px; animation-delay: 4.5s; }
+
+@keyframes expand {
+  0%   { opacity: 0; transform: scale(0.5); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+
+/* ===== CTA Button ===== */
+.cta-button {
+  background: var(--accent);
+  box-shadow: 0 0 60px var(--accent-glow), 0 20px 60px rgba(0,0,0,0.4);
+  transition: box-shadow 0.3s, transform 0.2s;
+}
+.cta-button:hover {
+  box-shadow: 0 0 80px var(--accent-glow), 0 25px 80px rgba(0,0,0,0.5);
+}
+.cta-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ===== Countdown number ===== */
+.countdown-number {
+  animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-shadow: 0 0 40px var(--accent-glow);
+}
+@keyframes pop {
+  0%   { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes ping-once {
+  0%   { transform: scale(1); opacity: 1; }
+  80%  { transform: scale(1.4); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-ping-once { animation: ping-once 0.6s ease-out forwards; }
+
+/* ===== Admin inputs ===== */
+.admin-input {
+  @apply px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm outline-none;
+  transition: border-color 0.2s;
+}
+.admin-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.admin-input::placeholder { color: rgba(255,255,255,0.2); }
+
+.admin-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+}
+.admin-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: transform 0.15s;
+}
+.admin-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.admin-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ===== Shake animation for PIN error ===== */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+.animate-shake { animation: shake 0.4s ease-in-out; }
+
+/* ===== Party theme animated gradient text ===== */
+.theme-party .cta-button {
+  background: linear-gradient(135deg, #f43f5e, #f97316, #f59e0b);
+  background-size: 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ===== Neon theme glow effects ===== */
+.theme-neon .cta-button {
+  box-shadow: 0 0 40px rgba(0,255,135,0.5), 0 0 80px rgba(0,255,135,0.2), 0 20px 60px rgba(0,0,0,0.5);
+}
+.theme-neon .countdown-number {
+  text-shadow: 0 0 20px #00ff87, 0 0 40px #00ff87;
+}
+
+/* ===== Elegant theme gold shimmer ===== */
+.theme-elegant .cta-button {
+  background: linear-gradient(135deg, #d4a054, #f0c97a, #d4a054);
+  background-size: 200%;
+  animation: gold-shimmer 4s ease infinite;
+}
+@keyframes gold-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ===== PWA fullscreen safe areas ===== */
+.welcome-screen {
+  padding-top: max(2rem, env(safe-area-inset-top));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  padding-left: max(2rem, env(safe-area-inset-left));
+  padding-right: max(2rem, env(safe-area-inset-right));
+}
+
+/* ===== Selection ===== */
+::selection { background: var(--accent-dim); color: white; }
