@@ -1,5 +1,6 @@
 import { CaptureRecord } from '../types';
 import { supabase, isSupabaseConfigured, BUCKET, CaptureRow } from './supabase';
+import { logger } from './logger';
 
 // ─── IndexedDB ───────────────────────────────────────────────────────────────
 
@@ -184,17 +185,27 @@ export async function saveCaptureToDb(
 ): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
   try {
-    const { error } = await supabase.from('captures').upsert({
+    const payload = {
       id: record.id,
       event_name: record.eventName,
       video_url: videoUrl,
       thumbnail_url: record.thumbnailUrl ?? null,
-      duration: record.duration,
+      duration: Math.round(record.duration), // Make sure duration is an integer!
       shared: record.shared,
       created_at: record.createdAt.toISOString(),
-    } satisfies CaptureRow);
+    } satisfies CaptureRow;
+    
+    logger.info('saveCaptureToDb: Sending payload', payload);
+    
+    const { error } = await supabase.from('captures').upsert(payload);
+    
+    if (error) {
+      logger.error('saveCaptureToDb: Error from Supabase', { error });
+    }
+    
     return !error;
-  } catch {
+  } catch (err) {
+    logger.error('saveCaptureToDb: Exception', { error: err });
     return false;
   }
 }
