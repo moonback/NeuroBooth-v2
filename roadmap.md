@@ -3,7 +3,7 @@
 ## Version 1.0.0 (Actuelle)
 - ✅ Capture vidéo avec webcam
 - ✅ Compte à rebours animé
-- ✅ Multi-thèmes (Dark, Neon, Elegant, Party)
+- ✅ Multi-thèmes (Dark, Neon, Elegant, Party) (avec prévisualisation visuelle améliorée)
 - ✅ Panneau admin avec PIN
 - ✅ Stockage local (IndexedDB)
 - ✅ Intégration Supabase (cloud)
@@ -11,6 +11,11 @@
 - ✅ Statistiques
 - ✅ Mode hors-ligne
 - ✅ PWA support
+- ✅ Effets ralenti personnalisables
+- ✅ Watermark (texte + logo)
+- ✅ Sauvegarde des paramètres dans Supabase
+- ✅ Composants admin réutilisables
+- ✅ Mobile-first responsive design
 
 ---
 
