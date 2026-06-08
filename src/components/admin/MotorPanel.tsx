@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader,
 } from 'lucide-react';
+import { Toggle } from './ui';
 
 interface MotorPanelProps {
   settings: Settings;
@@ -71,15 +72,10 @@ export function MotorPanel({ settings, updateSettings }: MotorPanelProps) {
       {/* Enable toggle */}
       <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
         <div>
-          <p className="text-white font-medium">Plateau motorise ESP32</p>
+          <p className="text-white font-medium">Plateau motorisé ESP32</p>
           <p className="text-white/40 text-sm">Synchronisation avec l'enregistrement</p>
         </div>
-        <button
-          onClick={() => updateSettings({ motorEnabled: !settings.motorEnabled })}
-          className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${settings.motorEnabled ? 'theme-accent-bg' : 'bg-white/10'}`}
-        >
-          <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${settings.motorEnabled ? 'left-6' : 'left-0.5'}`} />
-        </button>
+        <Toggle checked={settings.motorEnabled} onChange={(v) => updateSettings({ motorEnabled: v })} />
       </div>
 
       {settings.motorEnabled && (
@@ -177,14 +173,9 @@ export function MotorPanel({ settings, updateSettings }: MotorPanelProps) {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <p className="text-white/70 text-sm">Sync. avec enregistrement</p>
-                <p className="text-white/30 text-xs">Demarre et arrete avec la capture</p>
+                <p className="text-white/30 text-xs">Démarre et arrête avec la capture</p>
               </div>
-              <button
-                onClick={() => updateSettings({ motorSyncRecording: !settings.motorSyncRecording })}
-                className={`relative w-12 h-6 rounded-full transition-colors ${settings.motorSyncRecording ? 'theme-accent-bg' : 'bg-white/10'}`}
-              >
-                <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${settings.motorSyncRecording ? 'left-6' : 'left-0.5'}`} />
-              </button>
+              <Toggle checked={settings.motorSyncRecording} onChange={(v) => updateSettings({ motorSyncRecording: v })} />
             </div>
 
             {/* Manual control */}

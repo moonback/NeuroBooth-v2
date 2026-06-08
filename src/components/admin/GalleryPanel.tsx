@@ -14,6 +14,7 @@ import {
   Download,
   RotateCcw,
   AlertCircle,
+  Check,
 } from 'lucide-react';
 
 export function GalleryPanel() {
@@ -243,7 +244,7 @@ export function GalleryPanel() {
                       : 'bg-blue-600/30 text-blue-300 hover:bg-blue-600/50'
                   }`}
                 >
-                  {selected.shared ? <CheckMark size={14} /> : <Share2 size={14} />}
+                  {selected.shared ? <Check size={14} /> : <Share2 size={14} />}
                   {selected.shared ? 'Partagé' : 'Partager'}
                 </button>
                 {/* Delete */}
@@ -259,13 +260,5 @@ export function GalleryPanel() {
         </div>
       )}
     </div>
-  );
-}
-
-function CheckMark({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
   );
 }
