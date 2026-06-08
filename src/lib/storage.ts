@@ -1,5 +1,5 @@
-import { CaptureRecord } from '../types';
-import { supabase, isSupabaseConfigured, BUCKET, CaptureRow } from './supabase';
+import { CaptureRecord, Settings } from '../types';
+import { supabase, isSupabaseConfigured, BUCKET, CaptureRow, SettingsRow } from './supabase';
 import { logger } from './logger';
 
 // ─── IndexedDB ───────────────────────────────────────────────────────────────
@@ -309,4 +309,97 @@ function rowToRecord(row: CaptureRow): CaptureRecord {
 
 export function getObjectUrl(blob: Blob): string {
   return URL.createObjectURL(blob);
+}
+
+// ─── Settings Functions ───────────────────────────────────────────────────────────
+
+function rowToSettings(row: SettingsRow): Settings {
+  return {
+    eventName: row.event_name,
+    eventLogo: row.event_logo ?? '',
+    captureDuration: row.capture_duration,
+    countdownDuration: row.countdown_duration,
+    videoQuality: row.video_quality as any,
+    soundEnabled: row.sound_enabled,
+    theme: row.theme as any,
+    kioskMode: row.kiosk_mode,
+    kioskPin: row.kiosk_pin,
+    motorEnabled: row.motor_enabled,
+    motorSpeed: row.motor_speed,
+    motorDirection: row.motor_direction as any,
+    motorSyncRecording: row.motor_sync_recording,
+    cameraFacing: row.camera_facing as any,
+    showWatermark: row.show_watermark,
+    watermarkText: row.watermark_text,
+    slowMotionEnabled: row.slow_motion_enabled,
+    slowMotionFactor: row.slow_motion_factor,
+    slowMotionStartPercent: row.slow_motion_start_percent,
+    slowMotionDurationPercent: row.slow_motion_duration_percent,
+  };
+}
+
+function settingsToRow(settings: Settings): Omit<SettingsRow, 'updated_at'> {
+  return {
+    id: 'default',
+    event_name: settings.eventName,
+    event_logo: settings.eventLogo || null,
+    capture_duration: settings.captureDuration,
+    countdown_duration: settings.countdownDuration,
+    video_quality: settings.videoQuality,
+    sound_enabled: settings.soundEnabled,
+    theme: settings.theme,
+    kiosk_mode: settings.kioskMode,
+    kiosk_pin: settings.kioskPin,
+    motor_enabled: settings.motorEnabled,
+    motor_speed: settings.motorSpeed,
+    motor_direction: settings.motorDirection,
+    motor_sync_recording: settings.motorSyncRecording,
+    camera_facing: settings.cameraFacing,
+    show_watermark: settings.showWatermark,
+    watermark_text: settings.watermarkText,
+    slow_motion_enabled: settings.slowMotionEnabled,
+    slow_motion_factor: settings.slowMotionFactor,
+    slow_motion_start_percent: settings.slowMotionStartPercent,
+    slow_motion_duration_percent: settings.slowMotionDurationPercent,
+  };
+}
+
+export async function fetchSettingsFromCloud(): Promise<Settings | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .eq('id', 'default')
+      .single();
+    
+    if (error || !data) {
+      logger.warn('fetchSettingsFromCloud: No settings found or error', error);
+      return null;
+    }
+    
+    return rowToSettings(data as SettingsRow);
+  } catch (err) {
+    logger.error('fetchSettingsFromCloud: Exception', err);
+    return null;
+  }
+}
+
+export async function saveSettingsToCloud(settings: Settings): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const payload = settingsToRow(settings);
+    const { error } = await supabase
+      .from('settings')
+      .upsert(payload);
+    
+    if (error) {
+      logger.error('saveSettingsToCloud: Error from Supabase', { error });
+    }
+    
+    return !error;
+  } catch (err) {
+    logger.error('saveSettingsToCloud: Exception', err);
+    return false;
+  }
 }

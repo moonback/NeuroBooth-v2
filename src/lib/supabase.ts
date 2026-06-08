@@ -27,3 +27,28 @@ export interface CaptureRow {
   shared: boolean;
   created_at: string;
 }
+
+export interface SettingsRow {
+  id: string;
+  event_name: string;
+  event_logo: string | null;
+  capture_duration: number;
+  countdown_duration: number;
+  video_quality: string;
+  sound_enabled: boolean;
+  theme: string;
+  kiosk_mode: boolean;
+  kiosk_pin: string;
+  motor_enabled: boolean;
+  motor_speed: number;
+  motor_direction: string;
+  motor_sync_recording: boolean;
+  camera_facing: string;
+  show_watermark: boolean;
+  watermark_text: string;
+  slow_motion_enabled: boolean;
+  slow_motion_factor: number;
+  slow_motion_start_percent: number;
+  slow_motion_duration_percent: number;
+  updated_at: string;
+}

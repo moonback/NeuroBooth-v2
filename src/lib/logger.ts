@@ -4,14 +4,14 @@ export interface LogEntry {
   timestamp: Date;
   level: LogLevel;
   message: string;
-  data?: Record<string, unknown>;
+  data?: unknown;
 }
 
 class Logger {
   private logs: LogEntry[] = [];
   private maxLogs = 1000;
 
-  private addEntry(level: LogLevel, message: string, data?: Record<string, unknown>) {
+  private addEntry(level: LogLevel, message: string, data?: unknown) {
     const entry: LogEntry = {
       timestamp: new Date(),
       level,
@@ -33,19 +33,19 @@ class Logger {
     }
   }
 
-  debug(message: string, data?: Record<string, unknown>) {
+  debug(message: string, data?: unknown) {
     this.addEntry('debug', message, data);
   }
 
-  info(message: string, data?: Record<string, unknown>) {
+  info(message: string, data?: unknown) {
     this.addEntry('info', message, data);
   }
 
-  warn(message: string, data?: Record<string, unknown>) {
+  warn(message: string, data?: unknown) {
     this.addEntry('warn', message, data);
   }
 
-  error(message: string, data?: Record<string, unknown>) {
+  error(message: string, data?: unknown) {
     this.addEntry('error', message, data);
   }
 

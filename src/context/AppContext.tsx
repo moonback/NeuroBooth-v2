@@ -24,6 +24,8 @@ import {
   deleteCaptureFromDb,
   deleteFromCloud,
   fetchCapturesFromCloud,
+  fetchSettingsFromCloud,
+  saveSettingsToCloud,
   UploadProgress,
 } from '../lib/storage';
 import { applySlowMotion } from '../lib/videoProcessor';
@@ -82,8 +84,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
+  const [isSettingsLoadedFromCloud, setIsSettingsLoadedFromCloud] = useState(false);
 
-  // ── Online / Offline ─────────────────────────────────────────────────────
+  // ─── Online / Offline ───────────────────────────────────────────────────────
   useEffect(() => {
     const on = () => setIsOnline(true);
     const off = () => setIsOnline(false);
@@ -92,18 +95,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
-  // ── Load from IndexedDB on startup ──────────────────────────────────────
+  // ─── Load from IndexedDB on startup ──────────────────────────────────────
   useEffect(() => {
     getAllCaptures().then(setCaptures);
   }, []);
 
+  // ─── Load Settings from Cloud on Startup ─────────────────────────────────────
+  useEffect(() => {
+    async function loadCloudSettings() {
+      if (isOnline && !isSettingsLoadedFromCloud) {
+        const cloudSettings = await fetchSettingsFromCloud();
+        if (cloudSettings) {
+          setSettings(cloudSettings);
+          localStorage.setItem('pb360_settings', JSON.stringify(cloudSettings));
+        }
+        setIsSettingsLoadedFromCloud(true);
+      }
+    }
+    loadCloudSettings();
+  }, [isOnline, isSettingsLoadedFromCloud]);
+
+  // ─── Save Settings to Cloud when they change ────────────────────────────────────
+  useEffect(() => {
+    // Save locally first (always)
+    localStorage.setItem('pb360_settings', JSON.stringify(settings));
+    // Then try to save to cloud
+    if (isSettingsLoadedFromCloud) {
+      saveSettingsToCloud(settings);
+    }
+  }, [settings, isSettingsLoadedFromCloud]);
+
   // ── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback((patch: Partial<Settings>) => {
-    setSettings(prev => {
-      const next = { ...prev, ...patch };
-      localStorage.setItem('pb360_settings', JSON.stringify(next));
-      return next;
-    });
+    setSettings(prev => ({ ...prev, ...patch }));
   }, []);
 
   // ── Upload helpers ────────────────────────────────────────────────────────
