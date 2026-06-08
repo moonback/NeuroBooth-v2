@@ -27,6 +27,10 @@ export interface Settings {
   cameraFacing: CameraFacing;
   showWatermark: boolean;
   watermarkText: string;
+  slowMotionEnabled: boolean;
+  slowMotionFactor: number; // 0.1 to 1 (1 is normal speed)
+  slowMotionStartPercent: number; // 0 to 100 (percent of video where slow motion starts)
+  slowMotionDurationPercent: number; // 0 to 100 (percent of total video duration to slow down)
 }
 
 export interface CaptureRecord {
@@ -75,4 +79,8 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraFacing: 'environment',
   showWatermark: true,
   watermarkText: '',
+  slowMotionEnabled: false,
+  slowMotionFactor: 0.5, // Half speed
+  slowMotionStartPercent: 50, // Start at middle of video
+  slowMotionDurationPercent: 50, // Slow down 50% of video
 };

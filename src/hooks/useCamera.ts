@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
 import { CameraFacing, VideoQuality, QUALITY_CONSTRAINTS } from '../types';
+import { logger } from '../lib/logger';
 
 interface UseCameraOptions {
   facing: CameraFacing;
@@ -32,13 +33,19 @@ export function useCamera({ facing, quality, soundEnabled }: UseCameraOptions): 
 
   const startStream = useCallback(async (facingMode: CameraFacing) => {
     try {
+      logger.info('Starting camera stream', { facingMode, quality, soundEnabled });
       if (streamRef.current) {
+        logger.debug('Stopping previous camera stream');
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       const constraints = QUALITY_CONSTRAINTS[quality];
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { ...constraints, facingMode },
         audio: soundEnabled,
+      });
+      logger.info('Camera stream started', {
+        videoTracks: mediaStream.getVideoTracks().length,
+        audioTracks: mediaStream.getAudioTracks().length,
       });
       streamRef.current = mediaStream;
       setStream(mediaStream);
@@ -47,7 +54,9 @@ export function useCamera({ facing, quality, soundEnabled }: UseCameraOptions): 
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err) {
-      setError((err as Error).message || 'Camera access denied');
+      const errorMsg = (err as Error).message || 'Camera access denied';
+      logger.error('Failed to start camera stream', { error: errorMsg });
+      setError(errorMsg);
     }
   }, [quality, soundEnabled]);
 
@@ -68,27 +77,43 @@ export function useCamera({ facing, quality, soundEnabled }: UseCameraOptions): 
   }, [currentFacing]);
 
   const startRecording = useCallback(() => {
-    if (!streamRef.current) return;
+    if (!streamRef.current) {
+      logger.warn('Cannot start recording: no stream available');
+      return;
+    }
+    logger.info('Starting video recording');
     chunksRef.current = [];
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
       ? 'video/webm;codecs=vp9'
       : MediaRecorder.isTypeSupported('video/webm')
         ? 'video/webm'
         : 'video/mp4';
+    logger.debug('Using MIME type for recording', { mimeType });
     const recorder = new MediaRecorder(streamRef.current, { mimeType });
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.start(100);
     recorderRef.current = recorder;
     setIsRecording(true);
+    logger.info('Video recording started successfully');
   }, []);
 
   const stopRecording = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
       const recorder = recorderRef.current;
-      if (!recorder || recorder.state === 'inactive') { resolve(null); return; }
+      logger.info('Stopping video recording');
+      if (!recorder || recorder.state === 'inactive') {
+        logger.warn('Recorder is inactive, no video to process');
+        resolve(null);
+        return;
+      }
       recorder.onstop = () => {
         const mimeType = recorder.mimeType || 'video/webm';
         const blob = new Blob(chunksRef.current, { type: mimeType });
+        logger.info('Video recording stopped, blob created', {
+          size: blob.size,
+          mimeType,
+          chunkCount: chunksRef.current.length,
+        });
         setIsRecording(false);
         resolve(blob);
       };

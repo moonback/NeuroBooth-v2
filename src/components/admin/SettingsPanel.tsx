@@ -156,6 +156,53 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
             <label className="text-white/70 text-sm">Son actif</label>
             <Toggle checked={settings.soundEnabled} onChange={v => updateSettings({ soundEnabled: v })} />
           </div>
+
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-white/70 text-sm">Ralenti automatique</p>
+                <p className="text-white/30 text-xs">Ajoute un effet ralenti à la vidéo</p>
+              </div>
+              <Toggle checked={settings.slowMotionEnabled} onChange={v => updateSettings({ slowMotionEnabled: v })} />
+            </div>
+
+            {settings.slowMotionEnabled && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">
+                    Vitesse ralenti: <span className="text-white font-semibold">{Math.round(settings.slowMotionFactor * 100)}%</span>
+                  </label>
+                  <input type="range" min="10" max="100" value={settings.slowMotionFactor * 100}
+                    onChange={e => updateSettings({ slowMotionFactor: +e.target.value / 100 })}
+                    className="admin-range w-full" />
+                  <div className="flex justify-between text-white/30 text-xs mt-1">
+                    <span>10%</span><span>50%</span><span>100%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">
+                    Début ralenti: <span className="text-white font-semibold">{settings.slowMotionStartPercent}%</span>
+                  </label>
+                  <input type="range" min="0" max="100" value={settings.slowMotionStartPercent}
+                    onChange={e => updateSettings({ slowMotionStartPercent: +e.target.value })}
+                    className="admin-range w-full" />
+                  <div className="flex justify-between text-white/30 text-xs mt-1">
+                    <span>Début</span><span>Milieu</span><span>Fin</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">
+                    Durée ralenti: <span className="text-white font-semibold">{settings.slowMotionDurationPercent}%</span>
+                  </label>
+                  <input type="range" min="10" max="100" value={settings.slowMotionDurationPercent}
+                    onChange={e => updateSettings({ slowMotionDurationPercent: +e.target.value })}
+                    className="admin-range w-full" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

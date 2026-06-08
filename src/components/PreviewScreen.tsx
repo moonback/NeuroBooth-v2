@@ -14,6 +14,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { logger } from '../lib/logger';
 
 export function PreviewScreen() {
   const { currentCapture, markShared, startNewCapture, setScreen, isOnline, uploadStates, retryUpload } = useApp();
@@ -28,10 +29,13 @@ export function PreviewScreen() {
 
   // ── Video URL ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    logger.info('Preview: video URL effect run', { captureId: currentCapture?.id });
     if (!currentCapture) return;
     if (currentCapture.videoUrl) {
+      logger.info('Preview: using cloud video URL');
       setVideoUrl(currentCapture.videoUrl);
     } else if (currentCapture.videoBlob) {
+      logger.info('Preview: creating local object URL from blob');
       const url = URL.createObjectURL(currentCapture.videoBlob);
       setVideoUrl(url);
       return () => URL.revokeObjectURL(url);
@@ -40,39 +44,74 @@ export function PreviewScreen() {
 
   // ── QR Code — regenerate whenever the cloud URL becomes available ──────────
   useEffect(() => {
+    logger.info('Preview: QR code effect run', { captureId: currentCapture?.id, hasVideoUrl: !!currentCapture?.videoUrl });
     if (!currentCapture) return;
     const shareUrl = currentCapture.videoUrl || null;
-    if (!shareUrl) { setQrDataUrl(null); return; }
+    if (!shareUrl) { 
+      logger.debug('Preview: no share URL, clearing QR');
+      setQrDataUrl(null); 
+      return; 
+    }
+    logger.info('Preview: generating QR code for share URL');
     QRCode.toDataURL(shareUrl, {
       width: 280,
       margin: 2,
       color: { dark: '#ffffff', light: '#00000000' },
       errorCorrectionLevel: 'M',
-    }).then(setQrDataUrl).catch(() => {});
+    }).then((url) => {
+      logger.info('Preview: QR code generated');
+      setQrDataUrl(url);
+    }).catch((error) => {
+      logger.error('Preview: QR code generation failed', { error: (error as Error).message });
+    });
   }, [currentCapture?.videoUrl]);
 
   const togglePlay = useCallback(() => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) { videoRef.current.play(); setIsPlaying(true); }
-    else { videoRef.current.pause(); setIsPlaying(false); }
+    if (!videoRef.current) {
+      logger.warn('Preview: no video ref for togglePlay');
+      return;
+    }
+    if (videoRef.current.paused) { 
+      logger.info('Preview: playing video');
+      videoRef.current.play(); 
+      setIsPlaying(true); 
+    }
+    else { 
+      logger.info('Preview: pausing video');
+      videoRef.current.pause(); 
+      setIsPlaying(false); 
+    }
   }, []);
 
   const handleDownload = useCallback(() => {
-    if (!currentCapture?.videoBlob) return;
+    logger.info('Preview: download initiated', { captureId: currentCapture?.id });
+    if (!currentCapture?.videoBlob) {
+      logger.warn('Preview: no video blob for download');
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(currentCapture.videoBlob);
     a.download = `photobooth-360-${currentCapture.id.slice(0, 8)}.webm`;
     a.click();
+    logger.info('Preview: download complete');
     setDownloadDone(true);
   }, [currentCapture]);
 
   const handleShare = useCallback(async () => {
-    if (!currentCapture) return;
+    logger.info('Preview: share initiated', { captureId: currentCapture?.id });
+    if (!currentCapture) {
+      logger.warn('Preview: no current capture for share');
+      return;
+    }
     if (currentCapture.videoUrl && navigator.share) {
       try {
+        logger.info('Preview: using native share API');
         await navigator.share({ url: currentCapture.videoUrl, title: 'Mon Photobooth 360°' });
-      } catch {}
+      } catch (error) {
+        logger.warn('Preview: native share failed', { error: (error as Error).message });
+      }
     }
+    logger.info('Preview: marking capture as shared');
     await markShared(currentCapture.id);
     setShared(true);
   }, [currentCapture, markShared]);

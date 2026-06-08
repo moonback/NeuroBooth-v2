@@ -26,6 +26,8 @@ import {
   fetchCapturesFromCloud,
   UploadProgress,
 } from '../lib/storage';
+import { applySlowMotion } from '../lib/videoProcessor';
+import { logger } from '../lib/logger';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 
 export type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -105,14 +107,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const runUpload = useCallback(async (record: CaptureRecord) => {
+    logger.info('AppContext: starting upload started', { captureId: record.id });
     setUploadState(record.id, { status: 'uploading', progress: 0 });
 
     const onProgress = (p: UploadProgress) => {
       setUploadState(record.id, { progress: p.percent });
+      logger.debug('AppContext: upload progress', { captureId: record.id, progress: p.percent });
     };
 
     const url = await uploadToCloud(record, onProgress);
     if (url) {
+      logger.info('AppContext: upload successful', { captureId: record.id, url });
       await updateCapture(record.id, { videoUrl: url, uploadedToCloud: true });
       await saveCaptureToDb(record, url);
       setCaptures(prev => prev.map(c =>
@@ -124,15 +129,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       );
       setUploadState(record.id, { status: 'done', progress: 100 });
     } else {
+      logger.error('AppContext: upload failed', { captureId: record.id });
       setUploadState(record.id, { status: 'error', error: 'Upload échoué' });
     }
   }, [setUploadState]);
 
   // ── Sync hook (retry on reconnect + realtime) ─────────────────────────────
   const syncCallbacks = {
-    onUploadStart: (id: string) => setUploadState(id, { status: 'uploading', progress: 0 }),
-    onUploadProgress: (id: string, p: UploadProgress) => setUploadState(id, { progress: p.percent }),
+    onUploadStart: (id: string) => {
+      logger.info('Sync: upload started', { captureId: id });
+      setUploadState(id, { status: 'uploading', progress: 0 });
+    },
+    onUploadProgress: (id: string, p: UploadProgress) => {
+      logger.debug('Sync: upload progress', { captureId: id, progress: p.percent });
+      setUploadState(id, { progress: p.percent });
+    },
     onUploadComplete: (id: string, videoUrl: string) => {
+      logger.info('Sync: upload complete', { captureId: id, videoUrl });
       setCaptures(prev => prev.map(c =>
         c.id === id ? { ...c, videoUrl, uploadedToCloud: true } : c,
       ));
@@ -141,8 +154,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       );
       setUploadState(id, { status: 'done', progress: 100 });
     },
-    onUploadError: (id: string, error: string) => setUploadState(id, { status: 'error', error }),
+    onUploadError: (id: string, error: string) => {
+      logger.error('Sync: upload error', { captureId: id, error });
+      setUploadState(id, { status: 'error', error });
+    },
     onCloudCaptureFetched: (record: CaptureRecord) => {
+      logger.info('Sync: fetched cloud capture', { captureId: record.id });
       // Merge cloud record if not already present locally
       setCaptures(prev => {
         const exists = prev.some(c => c.id === record.id);
@@ -163,29 +180,60 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const finishCapture = useCallback(async (blob: Blob, duration: number) => {
     const id = crypto.randomUUID();
+    logger.info('AppContext: finishCapture called', { captureId: id, originalDuration: duration });
+    
+    let processedBlob = blob;
+    let newDuration = duration;
+
+    if (settings.slowMotionEnabled) {
+      logger.info('AppContext: applying slow motion');
+      try {
+        processedBlob = await applySlowMotion(blob, {
+          slowMotionFactor: settings.slowMotionFactor,
+          slowMotionStartPercent: settings.slowMotionStartPercent,
+          slowMotionDurationPercent: settings.slowMotionDurationPercent,
+        }, duration);
+        
+        // Calculate new duration based on slow motion settings
+        const normalPart1 = (settings.slowMotionStartPercent / 100) * duration;
+        const slowPart = ((settings.slowMotionDurationPercent / 100) * duration) / settings.slowMotionFactor;
+        const normalPart2 = duration - ((settings.slowMotionStartPercent + settings.slowMotionDurationPercent) / 100) * duration;
+        newDuration = normalPart1 + slowPart + normalPart2;
+        logger.info('AppContext: slow motion applied', { newDuration });
+      } catch (error) {
+        logger.error('AppContext: error applying slow motion', { error: (error as Error).message });
+        processedBlob = blob;
+      }
+    }
+
     const record: CaptureRecord = {
       id,
       eventName: settings.eventName,
-      videoBlob: blob,
-      duration,
+      videoBlob: processedBlob,
+      duration: newDuration,
       shared: false,
       createdAt: new Date(),
       uploadedToCloud: false,
     };
 
-    objectUrlsRef.current.set(id, URL.createObjectURL(blob));
+    logger.info('AppContext: creating object URL for capture', { captureId: id });
+    objectUrlsRef.current.set(id, URL.createObjectURL(processedBlob));
 
+    logger.info('AppContext: saving capture to IndexedDB', { captureId: id });
     await saveCapture(record);
     setCaptures(prev => [record, ...prev]);
     setCurrentCapture(record);
+    logger.info('AppContext: switching to preview screen');
     setScreen('preview');
 
     if (isOnline) {
+      logger.info('AppContext: device is online, starting upload');
       runUpload(record);
     } else {
+      logger.info('AppContext: device is offline, setting upload state to idle');
       setUploadState(id, { status: 'idle', progress: 0 });
     }
-  }, [settings.eventName, isOnline, runUpload, setUploadState]);
+  }, [settings.eventName, settings.slowMotionEnabled, settings.slowMotionFactor, settings.slowMotionStartPercent, settings.slowMotionDurationPercent, isOnline, runUpload, setUploadState]);
 
   // ── Manual retry for a single capture ────────────────────────────────────
   const retryUpload = useCallback(async (id: string) => {

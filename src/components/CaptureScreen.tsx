@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useCamera } from '../hooks/useCamera';
 import { useMotor } from '../hooks/useMotor';
 import { FlipHorizontal, Square, Mic, MicOff } from 'lucide-react';
+import { logger } from '../lib/logger';
 
 export function CaptureScreen() {
   const { settings, finishCapture, setScreen } = useApp();
@@ -21,19 +22,25 @@ export function CaptureScreen() {
 
   const handleStop = useCallback(async () => {
     if (phase === 'stopping') return;
+    logger.info('Capture screen: initiating stop', { phase });
     setPhase('stopping');
     if (timerRef.current) clearInterval(timerRef.current);
 
     if (settings.motorEnabled && settings.motorSyncRecording && motor.isConnected) {
+      logger.info('Stopping motor');
       await motor.stopMotor();
     }
 
+    logger.info('Camera stop recording initiated');
     const blob = await camera.stopRecording();
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+    logger.info('Recording duration calculated', { duration });
 
     if (blob) {
+      logger.info('Proceeding to finish capture');
       await finishCapture(blob, duration);
     } else {
+      logger.warn('No blob returned from camera, returning to welcome screen');
       setScreen('welcome');
     }
   }, [phase, camera, motor, settings, finishCapture, setScreen]);
@@ -41,13 +48,16 @@ export function CaptureScreen() {
   useEffect(() => {
     if (camera.error) return;
     if (camera.stream && phase === 'starting') {
+      logger.info('Capture screen: starting capture flow');
       // Short delay to let camera warm up
       const t = setTimeout(async () => {
+        logger.info('Camera start recording called');
         camera.startRecording();
         startTimeRef.current = Date.now();
         setPhase('recording');
 
         if (settings.motorEnabled && settings.motorSyncRecording && motor.isConnected) {
+          logger.info('Starting motor', { speed: settings.motorSpeed, direction: settings.motorDirection });
           await motor.startMotor(settings.motorSpeed, settings.motorDirection);
         }
 
@@ -55,13 +65,14 @@ export function CaptureScreen() {
           const s = (Date.now() - startTimeRef.current) / 1000;
           setElapsed(s);
           if (s >= settings.captureDuration) {
+            logger.info('Capture duration reached, initiating stop', { elapsed: s, targetDuration: settings.captureDuration });
             clearInterval(timerRef.current!);
           }
         }, 100);
       }, 500);
       return () => clearTimeout(t);
     }
-  }, [camera.stream, camera.error]);
+  }, [camera.stream, camera.error, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, motor.isConnected]);
 
   useEffect(() => {
     if (phase === 'recording' && elapsed >= settings.captureDuration) {
