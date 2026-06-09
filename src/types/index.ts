@@ -76,10 +76,10 @@ export const DEFAULT_SETTINGS: Settings = {
   motorSpeed: 50,
   motorDirection: 'cw',
   motorSyncRecording: true,
-  cameraFacing: 'environment',
-  showWatermark: true,
+  cameraFacing: 'user',
+  showWatermark: false,
   watermarkText: '',
-  slowMotionEnabled: false,
+  slowMotionEnabled: true,
   slowMotionFactor: 0.5, // Half speed
   slowMotionStartPercent: 50, // Start at middle of video
   slowMotionDurationPercent: 50, // Slow down 50% of video
