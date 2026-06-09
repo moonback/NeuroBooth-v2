@@ -1,22 +1,28 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { useCamera } from '../hooks/useCamera';
 import { useMotor } from '../hooks/useMotor';
 import { FlipHorizontal, Square, Mic, MicOff } from 'lucide-react';
 import { logger } from '../lib/logger';
 
 export function CaptureScreen() {
-  const { settings, finishCapture, setScreen } = useApp();
+  const {
+    settings, finishCapture, setScreen,
+    stream, cameraError,
+    startRecording, stopRecording, switchCamera, hasMultipleCameras,
+    currentCameraFacing, attachStreamToVideo
+  } = useApp();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    attachStreamToVideo(videoRef.current);
+    return () => {
+      attachStreamToVideo(null);
+    };
+  }, [attachStreamToVideo]);
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState<'starting' | 'recording' | 'stopping'>('starting');
   const startTimeRef = useRef<number>(0);
   const timerRef = useRef<number | null>(null);
-
-  const camera = useCamera({
-    facing: settings.cameraFacing,
-    quality: settings.videoQuality,
-    soundEnabled: settings.soundEnabled,
-  });
 
   const motor = useMotor();
 
@@ -32,7 +38,7 @@ export function CaptureScreen() {
     }
 
     logger.info('Camera stop recording initiated');
-    const blob = await camera.stopRecording();
+    const blob = await stopRecording();
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
     logger.info('Recording duration calculated', { duration });
 
@@ -43,16 +49,16 @@ export function CaptureScreen() {
       logger.warn('No blob returned from camera, returning to welcome screen');
       setScreen('welcome');
     }
-  }, [phase, camera, motor, settings, finishCapture, setScreen]);
+  }, [phase, stopRecording, motor, settings, finishCapture, setScreen]);
 
   useEffect(() => {
-    if (camera.error) return;
-    if (camera.stream && phase === 'starting') {
+    if (cameraError) return;
+    if (stream && phase === 'starting') {
       logger.info('Capture screen: starting capture flow');
       // Short delay to let camera warm up
       const t = setTimeout(async () => {
         logger.info('Camera start recording called');
-        camera.startRecording();
+        startRecording();
         startTimeRef.current = Date.now();
         setPhase('recording');
 
@@ -72,7 +78,7 @@ export function CaptureScreen() {
       }, 500);
       return () => clearTimeout(t);
     }
-  }, [camera.stream, camera.error, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, motor.isConnected]);
+  }, [stream, cameraError, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, motor.isConnected, startRecording]);
 
   useEffect(() => {
     if (phase === 'recording' && elapsed >= settings.captureDuration) {
@@ -92,21 +98,21 @@ export function CaptureScreen() {
       {/* Video preview */}
       <div className="absolute inset-0 bg-black">
         <video
-          ref={camera.videoRef}
+          ref={videoRef}
           autoPlay
           muted
           playsInline
           className="w-full h-full object-cover"
-          style={{ transform: settings.cameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+          style={{ transform: currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
         />
         {/* Dark overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
       </div>
 
       {/* Error state */}
-      {camera.error && (
+      {cameraError && (
         <div className="relative z-10 text-center p-8">
-          <p className="text-red-400 text-xl mb-4">Erreur caméra: {camera.error}</p>
+          <p className="text-red-400 text-xl mb-4">Erreur caméra: {cameraError}</p>
           <button onClick={() => setScreen('welcome')} className="btn-secondary">
             Retour
           </button>
@@ -189,9 +195,9 @@ export function CaptureScreen() {
         </div>
 
         <div className="flex items-center gap-3">
-          {camera.hasMultipleCameras && (
+          {hasMultipleCameras && (
             <button
-              onClick={camera.switchCamera}
+              onClick={switchCamera}
               className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white transition-all"
               aria-label="Changer de caméra"
             >

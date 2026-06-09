@@ -12,6 +12,8 @@ import {
   CaptureRecord,
   Stats,
   DEFAULT_SETTINGS,
+  CameraFacing,
+  QUALITY_CONSTRAINTS,
 } from '../types';
 import {
   saveCapture,
@@ -62,6 +64,16 @@ interface AppContextValue {
   isProcessing: boolean;
   processingProgress: number;
   setProcessingProgress: (progress: number) => void;
+  // Camera
+  stream: MediaStream | null;
+  cameraError: string | null;
+  isRecording: boolean;
+  startRecording: () => void;
+  stopRecording: () => Promise<Blob | null>;
+  switchCamera: () => void;
+  currentCameraFacing: CameraFacing;
+  hasMultipleCameras: boolean;
+  attachStreamToVideo: (videoElement: HTMLVideoElement | null) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -129,6 +141,122 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings(prev => ({ ...prev, ...patch }));
   }, []);
+
+  // ─── Camera State ───────────────────────────────────────────────────────
+  const streamRef = useRef<MediaStream | null>(null);
+  const currentVideoElementRef = useRef<HTMLVideoElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentCameraFacing, setCurrentCameraFacing] = useState<CameraFacing>(settings.cameraFacing);
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+
+  // ─── Camera Functions ───────────────────────────────────────────────────────
+  const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null) => {
+    currentVideoElementRef.current = videoElement;
+    if (streamRef.current && videoElement) {
+      videoElement.srcObject = streamRef.current;
+    }
+  }, []);
+
+  const startStream = useCallback(async (facingMode: CameraFacing) => {
+    try {
+      logger.info('Starting camera stream', { facingMode, quality: settings.videoQuality, soundEnabled: settings.soundEnabled });
+      if (streamRef.current) {
+        logger.debug('Stopping previous camera stream');
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+      const constraints = QUALITY_CONSTRAINTS[settings.videoQuality];
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { ...constraints, facingMode },
+        audio: settings.soundEnabled,
+      });
+      logger.info('Camera stream started', {
+        videoTracks: mediaStream.getVideoTracks().length,
+        audioTracks: mediaStream.getAudioTracks().length,
+      });
+      streamRef.current = mediaStream;
+      setStream(mediaStream);
+      setCameraError(null);
+      if (currentVideoElementRef.current) {
+        currentVideoElementRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      const errorMsg = (error as Error).message || 'Camera access denied';
+      logger.error('Failed to start camera stream', { error: errorMsg });
+      setCameraError(errorMsg);
+    }
+  }, [settings.videoQuality, settings.soundEnabled]);
+
+  const switchCamera = useCallback(() => {
+    const next: CameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
+    setCurrentCameraFacing(next);
+    updateSettings({ cameraFacing: next });
+  }, [currentCameraFacing, updateSettings]);
+
+  const startRecording = useCallback(() => {
+    if (!streamRef.current) {
+      logger.warn('Cannot start recording: no stream available');
+      return;
+    }
+    logger.info('Starting video recording');
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : MediaRecorder.isTypeSupported('video/webm')
+        ? 'video/webm'
+        : 'video/mp4';
+    logger.debug('Using MIME type for recording', { mimeType });
+    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    recorder.start(100);
+    recorderRef.current = recorder;
+    setIsRecording(true);
+    logger.info('Video recording started successfully');
+  }, []);
+
+  const stopRecording = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const recorder = recorderRef.current;
+      logger.info('Stopping video recording');
+      if (!recorder || recorder.state === 'inactive') {
+        logger.warn('Recorder is inactive, no video to process');
+        resolve(null);
+        return;
+      }
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || 'video/webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        logger.info('Video recording stopped, blob created', {
+          size: blob.size,
+          mimeType,
+          chunkCount: chunksRef.current.length,
+        });
+        setIsRecording(false);
+        resolve(blob);
+      };
+      recorder.stop();
+    });
+  }, []);
+
+  // ─── Initialize Camera on Startup ──────────────────────────────────────────
+  useEffect(() => {
+    startStream(currentCameraFacing);
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      const videoCams = devices.filter(d => d.kind === 'videoinput');
+      setHasMultipleCameras(videoCams.length > 1);
+    }).catch(() => {});
+    return () => {
+      streamRef.current?.getTracks().forEach(t => t.stop());
+    };
+  }, [currentCameraFacing, startStream]);
+
+  // ─── Restart stream when settings change ────────────────────────────────────
+  useEffect(() => {
+    startStream(currentCameraFacing);
+  }, [settings.videoQuality, settings.soundEnabled, startStream, currentCameraFacing]);
 
   // ── Upload helpers ────────────────────────────────────────────────────────
   const setUploadState = useCallback((id: string, state: Partial<UploadState>) => {
@@ -365,6 +493,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isProcessing,
       processingProgress,
       setProcessingProgress,
+      // Camera
+      stream,
+      cameraError,
+      isRecording,
+      startRecording,
+      stopRecording,
+      switchCamera,
+      currentCameraFacing,
+      hasMultipleCameras,
+      attachStreamToVideo,
     }}>
       {children}
     </AppContext.Provider>

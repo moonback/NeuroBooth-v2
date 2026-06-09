@@ -7,16 +7,38 @@ import {
   ChevronRight,
   Zap,
 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface WelcomeScreenProps {
   onAdmin: () => void;
 }
 
 export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
-  const { settings, startNewCapture, isOnline } = useApp();
+  const { settings, startNewCapture, isOnline, attachStreamToVideo, currentCameraFacing } = useApp();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    attachStreamToVideo(videoRef.current);
+    return () => {
+      attachStreamToVideo(null);
+    };
+  }, [attachStreamToVideo]);
 
   return (
     <div className="welcome-screen theme-bg flex flex-col items-center justify-between min-h-screen w-full p-6 relative overflow-hidden">
+      {/* Video preview background */}
+      <div className="absolute inset-0 bg-black">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          style={{ transform: currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
+        />
+        <div className="absolute inset-0 bg-black/50" />
+      </div>
+
       {/* Animated background rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="ring ring-1" />

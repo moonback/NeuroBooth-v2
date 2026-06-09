@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { Settings, AppTheme, VideoQuality, CameraFacing } from '../../types';
 import {
   Upload, RotateCcw, Palette, Zap, Crown, Sparkles, Check,
-  Calendar, Image as ImageIcon, Timer, Camera, Volume2,
+  Calendar, Image as ImageIcon, Camera, Volume2,
   FastForward, Shield, Lock,
 } from 'lucide-react';
 import { Toggle, AdminInput, AdminButton } from './ui';
