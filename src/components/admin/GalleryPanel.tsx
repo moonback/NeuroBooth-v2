@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CaptureRecord } from '../../types';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import JSZip from 'jszip';
 import {
   Play,
   Trash2,
@@ -15,18 +16,64 @@ import {
   RotateCcw,
   AlertCircle,
   Check,
+  CheckSquare,
+  Square,
+  Archive,
 } from 'lucide-react';
 
 export function GalleryPanel() {
   const { captures, deleteCapture, markShared, uploadStates, retryUpload, syncFromCloud, isOnline } = useApp();
   const [selected, setSelected] = useState<CaptureRecord | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [filter, setFilter] = useState<'all' | 'cloud' | 'local' | 'shared'>('all');
+
+  const filtered = captures.filter(c => {
+    if (filter === 'cloud')  return c.uploadedToCloud;
+    if (filter === 'local')  return !c.uploadedToCloud;
+    if (filter === 'shared') return c.shared;
+    return true;
+  });
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try { await syncFromCloud(); } finally { setSyncing(false); }
   }, [syncFromCloud]);
+
+  const handleExportZip = useCallback(async () => {
+    if (selectedIds.size === 0) {
+      alert('Veuillez sélectionner au moins une capture à exporter');
+      return;
+    }
+    setExporting(true);
+    try {
+      const zip = new JSZip();
+      for (const id of selectedIds) {
+        const capture = captures.find(c => c.id === id);
+        if (!capture) continue;
+        // Try to get the blob: first try videoBlob, if not try to fetch from videoUrl
+        let blob: Blob | null = capture.videoBlob ?? null;
+        if (!blob && capture.videoUrl) {
+          const res = await fetch(capture.videoUrl);
+          if (res.ok) blob = await res.blob();
+        }
+        if (!blob) continue;
+        const ext = blob.type.includes('mp4') ? 'mp4' : 'webm';
+        const filename = `photobooth-360-${capture.id.slice(0, 8)}.${ext}`;
+        zip.file(filename, blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `photobooth-360-export-${Date.now()}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }, [selectedIds, captures]);
 
   const getVideoUrl = (c: CaptureRecord): string | null => {
     if (c.videoUrl) return c.videoUrl;
@@ -42,12 +89,22 @@ export function GalleryPanel() {
     a.click();
   }, []);
 
-  const filtered = captures.filter(c => {
-    if (filter === 'cloud')  return c.uploadedToCloud;
-    if (filter === 'local')  return !c.uploadedToCloud;
-    if (filter === 'shared') return c.shared;
-    return true;
-  });
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filtered.map(c => c.id)));
+  }, [filtered]);
+
+  const deselectAll = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
 
   const pendingCount = captures.filter(c => !c.uploadedToCloud && c.videoBlob).length;
   const errorCount = Object.values(uploadStates).filter(s => s.status === 'error').length;
@@ -63,7 +120,7 @@ export function GalleryPanel() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <span className="text-white font-semibold">{captures.length} capture{captures.length !== 1 ? 's' : ''}</span>
+          <span className="text-white font-medium">{captures.length} capture{captures.length !== 1 ? 's' : ''}</span>
           {pendingCount > 0 && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 text-xs border border-yellow-500/20">
               <CloudOff size={10} /> {pendingCount} en attente
@@ -74,9 +131,47 @@ export function GalleryPanel() {
               <AlertCircle size={10} /> {errorCount} erreur{errorCount > 1 ? 's' : ''}
             </span>
           )}
+          {selectedIds.size > 0 && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 text-xs border border-purple-500/20">
+              <CheckSquare size={10} /> {selectedIds.size} sélectionnée{selectedIds.size > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Select/Deselect All */}
+          {filtered.length > 0 && (
+            <>
+              {selectedIds.size === filtered.length ? (
+                <button
+                  onClick={deselectAll}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm"
+                >
+                  <CheckSquare size={14} /> Déselectionner tout
+                </button>
+              ) : (
+                <button
+                  onClick={selectAll}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm"
+                >
+                  <Square size={14} /> Sélectionner tout
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Export Zip */}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleExportZip}
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600/30 text-purple-300 hover:bg-purple-600/50 transition-all text-sm disabled:opacity-50"
+            >
+              {exporting ? <Loader size={14} className="animate-spin" /> : <Archive size={14} />}
+              Exporter ZIP
+            </button>
+          )}
+
           {/* Sync button */}
           {isSupabaseConfigured && (
             <button
@@ -120,23 +215,42 @@ export function GalleryPanel() {
             const uploadSt = uploadStates[c.id];
             const isUploading = uploadSt?.status === 'uploading';
             const hasError = uploadSt?.status === 'error';
+            const isSelected = selectedIds.has(c.id);
 
             return (
               <div
                 key={c.id}
-                className="group relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer hover:border-white/30 transition-all hover:scale-[1.02]"
-                onClick={() => setSelected(c)}
+                className={`group relative rounded-2xl overflow-hidden bg-white/5 border transition-all hover:scale-[1.02] ${
+                  isSelected ? 'border-purple-500/60 shadow-lg shadow-purple-500/20' : 'border-white/10 hover:border-white/30'
+                }`}
               >
+                {/* Select Checkbox */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleSelect(c.id); }}
+                  className="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+                >
+                  {isSelected ? <CheckSquare size={16} className="text-purple-400" /> : <Square size={16} className="text-white/60" />}
+                </button>
+
                 {url ? (
-                  <video src={url} className="w-full aspect-video object-cover" muted preload="metadata" />
+                  <video
+                    src={url}
+                    className="w-full aspect-video object-cover cursor-pointer"
+                    muted
+                    preload="metadata"
+                    onClick={() => setSelected(c)}
+                  />
                 ) : (
-                  <div className="w-full aspect-video bg-white/5 flex items-center justify-center">
+                  <div
+                    className="w-full aspect-video bg-white/5 flex items-center justify-center cursor-pointer"
+                    onClick={() => setSelected(c)}
+                  >
                     <Play size={20} className="text-white/20" />
                   </div>
                 )}
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 pointer-events-none">
                   <p className="text-white text-xs font-medium">{formatDate(c.createdAt)}</p>
                   <p className="text-white/50 text-xs">{c.duration}s</p>
                 </div>
@@ -182,7 +296,7 @@ export function GalleryPanel() {
         </div>
       )}
 
-      {/* ── Detail Modal ── */}
+      {/* ─── Detail Modal ─── */}
       {selected && (
         <div
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"

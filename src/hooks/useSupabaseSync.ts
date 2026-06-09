@@ -19,7 +19,7 @@ interface SyncCallbacks {
 
 export function useSupabaseSync(isOnline: boolean, callbacks: SyncCallbacks) {
   const retryInProgress = useRef(false);
-  const channelRef = useRef<ReturnType<NonNullable<typeof supabase>['channel']> | null>(null);
+  const channelRef = useRef<any>(null);
 
   /** Upload one pending record with progress feedback */
   const uploadOne = useCallback(async (record: CaptureRecord) => {
@@ -92,7 +92,7 @@ export function useSupabaseSync(isOnline: boolean, callbacks: SyncCallbacks) {
       }
       channelRef.current = null;
     };
-  }, []);
+  }, [callbacks]);
 
   return { retryPending };
 }
