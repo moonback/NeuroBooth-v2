@@ -16,7 +16,9 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   const { settings, startNewCapture, isOnline, attachStreamToVideo, currentCameraFacing } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [tapCount, setTapCount] = useState(0);
+  const [visualTaps, setVisualTaps] = useState<{ id: number; x: number; y: number }[]>([]);
   const lastTapTimeRef = useRef(0);
+  const tapIdRef = useRef(0);
   const GESTURE_TIMEOUT = 1000; // 1 second timeout between taps
   const REQUIRED_TAPS = 5;
 
@@ -27,7 +29,24 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
     };
   }, [attachStreamToVideo]);
 
-  const handleSecretTap = () => {
+  const handleSecretTap = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Add visual feedback
+    const id = tapIdRef.current++;
+    setVisualTaps(prev => [...prev, { id, x, y }]);
+    setTimeout(() => {
+      setVisualTaps(prev => prev.filter(t => t.id !== id));
+    }, 600);
+
+    // Add haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(20); // 20ms vibration
+    }
+
+    // Handle gesture logic
     const now = Date.now();
     const timeSinceLastTap = now - lastTapTimeRef.current;
     lastTapTimeRef.current = now;
@@ -38,6 +57,10 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       const newCount = tapCount + 1;
       setTapCount(newCount);
       if (newCount >= REQUIRED_TAPS) {
+        // Stronger haptic feedback for success
+        if (navigator.vibrate) {
+          navigator.vibrate([50, 30, 50]);
+        }
         onAdmin();
         setTapCount(0);
       }
@@ -80,9 +103,28 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
         {/* Secret gesture area */}
         <button
           onClick={handleSecretTap}
-          className="p-3 rounded-full"
+          className="p-3 rounded-full relative overflow-visible"
           aria-label="Secret gesture zone"
-        />
+        >
+          {/* Tap count indicator */}
+          {tapCount > 0 && (
+            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm border border-white/20">
+              {tapCount}/{REQUIRED_TAPS}
+            </div>
+          )}
+          
+          {/* Visual tap animations */}
+          {visualTaps.map(tap => (
+            <div
+              key={tap.id}
+              className="absolute w-10 h-10 rounded-full bg-white/40 pointer-events-none animate-ping"
+              style={{
+                left: tap.x - 20,
+                top: tap.y - 20,
+              }}
+            />
+          ))}
+        </button>
       </div>
 
       {/* Center content */}
