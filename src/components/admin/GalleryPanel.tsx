@@ -22,11 +22,12 @@ import {
 } from 'lucide-react';
 
 export function GalleryPanel() {
-  const { captures, deleteCapture, markShared, uploadStates, retryUpload, syncFromCloud, isOnline } = useApp();
+  const { captures, deleteCapture, clearAllCaptures, markShared, uploadStates, retryUpload, syncFromCloud, isOnline } = useApp();
   const [selected, setSelected] = useState<CaptureRecord | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'cloud' | 'local' | 'shared'>('all');
 
   const filtered = captures.filter(c => {
@@ -35,6 +36,20 @@ export function GalleryPanel() {
     if (filter === 'shared') return c.shared;
     return true;
   });
+
+  const handleClearAll = useCallback(async () => {
+    if (captures.length === 0) return;
+    const confirmDelete = window.confirm('Êtes-vous sûr de vouloir vider complètement la galerie ? Cette action est irréversible et supprimera toutes les captures localement et sur le cloud.');
+    if (!confirmDelete) return;
+
+    setIsClearing(true);
+    try {
+      await clearAllCaptures();
+      setSelectedIds(new Set());
+    } finally {
+      setIsClearing(false);
+    }
+  }, [captures.length, clearAllCaptures]);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -182,6 +197,19 @@ export function GalleryPanel() {
             >
               {syncing ? <Loader size={14} className="animate-spin" /> : <RefreshCw size={14} />}
               Sync cloud
+            </button>
+          )}
+
+          {/* Clear All button */}
+          {captures.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={isClearing}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600/30 text-red-300 hover:bg-red-600/50 transition-all text-sm disabled:opacity-50 border border-red-500/20"
+              title="Vider toute la galerie"
+            >
+              {isClearing ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              Vider la galerie
             </button>
           )}
         </div>

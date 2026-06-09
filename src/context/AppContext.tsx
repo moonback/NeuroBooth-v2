@@ -54,6 +54,7 @@ interface AppContextValue {
   finishCapture: (blob: Blob, duration: number) => Promise<void>;
   markShared: (id: string) => Promise<void>;
   deleteCapture: (id: string) => Promise<void>;
+  clearAllCaptures: () => Promise<void>;
   uploadStates: Record<string, UploadState>;
   stats: Stats;
   adminUnlocked: boolean;
@@ -441,6 +442,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUploadStates(prev => { const n = { ...prev }; delete n[id]; return n; });
   }, [captures]);
 
+  // ── Clear all captures ────────────────────────────────────────────────────
+  const clearAllCaptures = useCallback(async () => {
+    const promises = captures.map(async (capture) => {
+      await idbDeleteCapture(capture.id);
+
+      const objUrl = objectUrlsRef.current.get(capture.id);
+      if (objUrl) { URL.revokeObjectURL(objUrl); objectUrlsRef.current.delete(capture.id); }
+
+      if (capture.videoUrl) {
+        deleteFromCloud(capture.videoUrl);
+      }
+      deleteCaptureFromDb(capture.id);
+    });
+
+    await Promise.all(promises);
+
+    setCaptures([]);
+    setCurrentCapture(null);
+    setUploadStates({});
+  }, [captures]);
+
   // ── Sync from cloud ────────────────────────────────────────────────────────
   const syncFromCloud = useCallback(async () => {
     const cloudCaptures = await fetchCapturesFromCloud(settings.eventName);
@@ -484,6 +506,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       startNewCapture, finishCapture,
       markShared,
       deleteCapture,
+      clearAllCaptures,
       uploadStates,
       stats,
       adminUnlocked, unlockAdmin: (pin) => {
