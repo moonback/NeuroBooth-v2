@@ -354,28 +354,73 @@ export function SettingsPanel({ settings, updateSettings, resetSettings }: Setti
           />
 
           {settings.slowMotionEnabled && (
-            <div className="space-y-2 pl-2 border-l border-white/[0.06]">
+            <div className="mt-3 p-4 bg-white/[0.02] border border-white/[0.04] rounded-2xl space-y-4 relative overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full pointer-events-none" />
+              
+              <div className="flex items-center gap-2 mb-1">
+                <FastForward size={13} className="text-indigo-400/50" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400/50">Configuration de l'effet</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 pb-1">
+                {[
+                  { label: 'Subtil', speed: 0.8, start: 0, duration: 100 },
+                  { label: 'Épique', speed: 0.5, start: 25, duration: 50 },
+                  { label: 'Matrix', speed: 0.25, start: 40, duration: 20 },
+                  { label: 'Action', speed: 0.4, start: 60, duration: 40 },
+                ].map(preset => {
+                  const isActive = 
+                    settings.slowMotionFactor === preset.speed &&
+                    settings.slowMotionStartPercent === preset.start &&
+                    settings.slowMotionDurationPercent === preset.duration;
+                    
+                  return (
+                    <button
+                      key={preset.label}
+                      onClick={() => updateSettings({
+                        slowMotionFactor: preset.speed,
+                        slowMotionStartPercent: preset.start,
+                        slowMotionDurationPercent: preset.duration
+                      })}
+                      className={`px-3 py-1.5 text-[11px] font-medium rounded-lg border transition-all ${
+                        isActive 
+                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.1)]' 
+                          : 'bg-white/[0.03] hover:bg-white/[0.06] text-white/60 border-white/[0.05]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              
               <SliderRow
-                label="Vitesse ralenti"
+                label="Vitesse du ralenti"
                 value={settings.slowMotionFactor * 100}
                 display={`${Math.round(settings.slowMotionFactor * 100)}%`}
                 min={10} max={100}
+                step={5}
                 onChange={v => updateSettings({ slowMotionFactor: v / 100 })}
               />
-              <SliderRow
-                label="Début ralenti"
-                value={settings.slowMotionStartPercent}
-                display={`${settings.slowMotionStartPercent}%`}
-                min={0} max={100}
-                onChange={v => updateSettings({ slowMotionStartPercent: v })}
-              />
-              <SliderRow
-                label="Durée ralenti"
-                value={settings.slowMotionDurationPercent}
-                display={`${settings.slowMotionDurationPercent}%`}
-                min={10} max={100}
-                onChange={v => updateSettings({ slowMotionDurationPercent: v })}
-              />
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <SliderRow
+                  label="Début de l'effet"
+                  value={settings.slowMotionStartPercent}
+                  display={`${settings.slowMotionStartPercent}%`}
+                  min={0} max={100}
+                  step={5}
+                  onChange={v => updateSettings({ slowMotionStartPercent: v })}
+                />
+                <SliderRow
+                  label="Durée de l'effet"
+                  value={settings.slowMotionDurationPercent}
+                  display={`${settings.slowMotionDurationPercent}%`}
+                  min={10} max={100}
+                  step={5}
+                  onChange={v => updateSettings({ slowMotionDurationPercent: v })}
+                />
+              </div>
             </div>
           )}
         </div>
