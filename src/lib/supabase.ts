@@ -50,5 +50,8 @@ export interface SettingsRow {
   slow_motion_factor: number;
   slow_motion_start_percent: number;
   slow_motion_duration_percent: number;
+  ultra_wide_enabled: boolean;
+  gyro_stabilization_enabled: boolean;
+  gyro_stabilization_strength: number;
   updated_at: string;
 }

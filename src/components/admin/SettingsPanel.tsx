@@ -4,7 +4,7 @@ import { Settings, AppTheme, VideoQuality, CameraFacing } from '../../types';
 import {
   Upload, RotateCcw, Palette, Zap, Crown, Sparkles, Check,
   Calendar, Image as ImageIcon, Camera, Volume2,
-  FastForward, Shield, Lock,
+  FastForward, Shield, Lock, Maximize2, Crosshair,
 } from 'lucide-react';
 import { Toggle, AdminInput, AdminButton } from './ui';
  
@@ -12,6 +12,7 @@ interface SettingsPanelProps {
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => void;
   resetSettings: () => void;
+  hasUltraWideSupport?: boolean;
 }
  
 /* ── Design tokens ────────────────────────────────────────────── */
@@ -177,7 +178,7 @@ function ToggleRow({
 }
  
 /* ── Main component ───────────────────────────────────────────── */
-export function SettingsPanel({ settings, updateSettings, resetSettings }: SettingsPanelProps) {
+export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltraWideSupport = true }: SettingsPanelProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -335,6 +336,38 @@ export function SettingsPanel({ settings, updateSettings, resetSettings }: Setti
               })}
             </div>
           </div>
+
+          <ToggleRow
+            icon={<Maximize2 size={14} />}
+            title="Ultra grand-angle (0.5x)"
+            sub={
+              hasUltraWideSupport
+                ? 'Objectif wide natif — idéal pour ne couper personne'
+                : 'Non détecté sur cet appareil — repli sur caméra standard'
+            }
+            checked={settings.ultraWideEnabled}
+            onChange={v => updateSettings({ ultraWideEnabled: v })}
+          />
+
+          <ToggleRow
+            icon={<Crosshair size={14} />}
+            title="Stabilisation gyroscopique (EIS)"
+            sub="Compense les vibrations du bras 360 via gyroscope"
+            checked={settings.gyroStabilizationEnabled}
+            onChange={v => updateSettings({ gyroStabilizationEnabled: v })}
+          />
+
+          {settings.gyroStabilizationEnabled && (
+            <SliderRow
+              label="Intensité EIS"
+              value={Math.round(settings.gyroStabilizationStrength * 100)}
+              display={`${Math.round(settings.gyroStabilizationStrength * 100)}%`}
+              min={30}
+              max={100}
+              step={5}
+              onChange={v => updateSettings({ gyroStabilizationStrength: v / 100 })}
+            />
+          )}
 
           <ToggleRow
             icon={<Volume2 size={14} />}

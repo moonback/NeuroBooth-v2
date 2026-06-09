@@ -335,6 +335,9 @@ function rowToSettings(row: SettingsRow): Settings {
     slowMotionFactor: row.slow_motion_factor,
     slowMotionStartPercent: row.slow_motion_start_percent,
     slowMotionDurationPercent: row.slow_motion_duration_percent,
+    ultraWideEnabled: row.ultra_wide_enabled ?? false,
+    gyroStabilizationEnabled: row.gyro_stabilization_enabled ?? false,
+    gyroStabilizationStrength: row.gyro_stabilization_strength ?? 0.7,
   };
 }
 
@@ -361,6 +364,9 @@ function settingsToRow(settings: Settings): Omit<SettingsRow, 'updated_at'> {
     slow_motion_factor: settings.slowMotionFactor,
     slow_motion_start_percent: settings.slowMotionStartPercent,
     slow_motion_duration_percent: settings.slowMotionDurationPercent,
+    ultra_wide_enabled: settings.ultraWideEnabled,
+    gyro_stabilization_enabled: settings.gyroStabilizationEnabled,
+    gyro_stabilization_strength: settings.gyroStabilizationStrength,
   };
 }
 

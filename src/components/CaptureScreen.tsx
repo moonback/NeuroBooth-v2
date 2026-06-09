@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useMotor } from '../hooks/useMotor';
-import { FlipHorizontal, Square, Mic, MicOff } from 'lucide-react';
+import { FlipHorizontal, Square, Mic, MicOff, Maximize2, Crosshair } from 'lucide-react';
 import { logger } from '../lib/logger';
 
 export function CaptureScreen() {
@@ -9,7 +9,8 @@ export function CaptureScreen() {
     settings, finishCapture, setScreen,
     stream, cameraError,
     startRecording, stopRecording, switchCamera, hasMultipleCameras,
-    currentCameraFacing, attachStreamToVideo
+    currentCameraFacing, attachStreamToVideo,
+    ultraWideActive, gyroStabilizationActive, recalibrateGyro,
   } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -58,6 +59,9 @@ export function CaptureScreen() {
       // Short delay to let camera warm up
       const t = setTimeout(async () => {
         logger.info('Camera start recording called');
+        if (settings.gyroStabilizationEnabled) {
+          recalibrateGyro();
+        }
         startRecording();
         startTimeRef.current = Date.now();
         setPhase('recording');
@@ -78,7 +82,7 @@ export function CaptureScreen() {
       }, 500);
       return () => clearTimeout(t);
     }
-  }, [stream, cameraError, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, motor.isConnected, startRecording]);
+  }, [stream, cameraError, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, settings.gyroStabilizationEnabled, motor.isConnected, startRecording, recalibrateGyro]);
 
   useEffect(() => {
     if (phase === 'recording' && elapsed >= settings.captureDuration) {
@@ -139,7 +143,19 @@ export function CaptureScreen() {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {ultraWideActive && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-bold uppercase tracking-wide">
+              <Maximize2 size={12} />
+              0.5x
+            </span>
+          )}
+          {gyroStabilizationActive && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-[10px] font-bold uppercase tracking-wide">
+              <Crosshair size={12} />
+              EIS
+            </span>
+          )}
           {settings.soundEnabled
             ? <Mic size={18} className="text-white/60" />
             : <MicOff size={18} className="text-white/30" />}

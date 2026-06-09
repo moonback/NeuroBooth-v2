@@ -31,6 +31,9 @@ export interface Settings {
   slowMotionFactor: number; // 0.1 to 1 (1 is normal speed)
   slowMotionStartPercent: number; // 0 to 100 (percent of video where slow motion starts)
   slowMotionDurationPercent: number; // 0 to 100 (percent of total video duration to slow down)
+  ultraWideEnabled: boolean;
+  gyroStabilizationEnabled: boolean;
+  gyroStabilizationStrength: number; // 0.3 to 1.0
 }
 
 export interface CaptureRecord {
@@ -83,4 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
   slowMotionFactor: 0.5, // Half speed
   slowMotionStartPercent: 50, // Start at middle of video
   slowMotionDurationPercent: 50, // Slow down 50% of video
+  ultraWideEnabled: false,
+  gyroStabilizationEnabled: false,
+  gyroStabilizationStrength: 0.7,
 };

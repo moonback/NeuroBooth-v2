@@ -3,9 +3,16 @@ import { useApp } from '../context/AppContext';
 import { Camera } from 'lucide-react';
 
 export function CountdownScreen() {
-  const { settings, setScreen } = useApp();
+  const { settings, setScreen, requestGyroAccess, recalibrateGyro } = useApp();
   const [count, setCount] = useState(settings.countdownDuration);
   const audioRef = useRef<AudioContext | null>(null);
+  const gyroReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (!settings.gyroStabilizationEnabled || gyroReadyRef.current) return;
+    gyroReadyRef.current = true;
+    requestGyroAccess();
+  }, [settings.gyroStabilizationEnabled, requestGyroAccess]);
 
   const playBeep = (freq: number, duration: number) => {
     if (!settings.soundEnabled) return;
@@ -26,6 +33,9 @@ export function CountdownScreen() {
   };
 
   useEffect(() => {
+    if (count === 1 && settings.gyroStabilizationEnabled) {
+      recalibrateGyro();
+    }
     playBeep(440, 0.15);
     if (count === 0) {
       playBeep(880, 0.3);

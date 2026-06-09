@@ -13,8 +13,10 @@ import {
   Stats,
   DEFAULT_SETTINGS,
   CameraFacing,
-  QUALITY_CONSTRAINTS,
 } from '../types';
+import { acquireCameraStream, detectUltraWideSupport } from '../lib/cameraConstraints';
+import { requestGyroPermission } from '../lib/gyroStabilizer';
+import { useStabilizedStream } from '../hooks/useStabilizedStream';
 import {
   saveCapture,
   getAllCaptures,
@@ -76,6 +78,11 @@ interface AppContextValue {
   currentCameraFacing: CameraFacing;
   hasMultipleCameras: boolean;
   attachStreamToVideo: (videoElement: HTMLVideoElement | null) => void;
+  ultraWideActive: boolean;
+  hasUltraWideSupport: boolean;
+  gyroStabilizationActive: boolean;
+  recalibrateGyro: () => void;
+  requestGyroAccess: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -150,52 +157,85 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ─── Camera State ───────────────────────────────────────────────────────
-  const streamRef = useRef<MediaStream | null>(null);
+  const rawStreamRef = useRef<MediaStream | null>(null);
+  const activeStreamRef = useRef<MediaStream | null>(null);
   const currentVideoElementRef = useRef<HTMLVideoElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [rawStream, setRawStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [currentCameraFacing, setCurrentCameraFacing] = useState<CameraFacing>(settings.cameraFacing);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [ultraWideActive, setUltraWideActive] = useState(false);
+  const [hasUltraWideSupport, setHasUltraWideSupport] = useState(false);
+
+  const {
+    outputStream: stabilizedStream,
+    isStabilizing,
+    recalibrate: recalibrateGyro,
+  } = useStabilizedStream({
+    inputStream: rawStream,
+    enabled: settings.gyroStabilizationEnabled,
+    mirror: currentCameraFacing === 'user',
+    strength: settings.gyroStabilizationStrength,
+  });
+
+  const activeStream =
+    settings.gyroStabilizationEnabled && isStabilizing && stabilizedStream
+      ? stabilizedStream
+      : rawStream;
+
+  useEffect(() => {
+    activeStreamRef.current = activeStream;
+    if (currentVideoElementRef.current && activeStream) {
+      currentVideoElementRef.current.srcObject = activeStream;
+    }
+  }, [activeStream]);
+
+  const requestGyroAccess = useCallback(() => requestGyroPermission(), []);
 
   // ─── Camera Functions ───────────────────────────────────────────────────────
   const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null) => {
     currentVideoElementRef.current = videoElement;
-    if (streamRef.current && videoElement) {
-      videoElement.srcObject = streamRef.current;
+    if (activeStream && videoElement) {
+      videoElement.srcObject = activeStream;
     }
-  }, []);
+  }, [activeStream]);
 
   const startStream = useCallback(async (facingMode: CameraFacing) => {
     try {
-      logger.info('Starting camera stream', { facingMode, quality: settings.videoQuality, soundEnabled: settings.soundEnabled });
-      if (streamRef.current) {
-        logger.debug('Stopping previous camera stream');
-        streamRef.current.getTracks().forEach(t => t.stop());
-      }
-      const constraints = QUALITY_CONSTRAINTS[settings.videoQuality];
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { ...constraints, facingMode },
-        audio: settings.soundEnabled,
+      logger.info('Starting camera stream', {
+        facingMode,
+        quality: settings.videoQuality,
+        soundEnabled: settings.soundEnabled,
+        ultraWide: settings.ultraWideEnabled,
       });
+      if (rawStreamRef.current) {
+        logger.debug('Stopping previous camera stream');
+        rawStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+      const { stream: mediaStream, ultraWideActive: wideActive } = await acquireCameraStream(
+        facingMode,
+        settings.videoQuality,
+        { ultraWide: settings.ultraWideEnabled, audio: settings.soundEnabled },
+      );
       logger.info('Camera stream started', {
         videoTracks: mediaStream.getVideoTracks().length,
         audioTracks: mediaStream.getAudioTracks().length,
+        ultraWideActive: wideActive,
       });
-      streamRef.current = mediaStream;
-      setStream(mediaStream);
+      rawStreamRef.current = mediaStream;
+      setRawStream(mediaStream);
+      setUltraWideActive(wideActive);
       setCameraError(null);
-      if (currentVideoElementRef.current) {
-        currentVideoElementRef.current.srcObject = mediaStream;
-      }
     } catch (error) {
       const errorMsg = (error as Error).message || 'Camera access denied';
       logger.error('Failed to start camera stream', { error: errorMsg });
       setCameraError(errorMsg);
+      setUltraWideActive(false);
     }
-  }, [settings.videoQuality, settings.soundEnabled]);
+  }, [settings.videoQuality, settings.soundEnabled, settings.ultraWideEnabled]);
 
   const switchCamera = useCallback(() => {
     const next: CameraFacing = currentCameraFacing === 'user' ? 'environment' : 'user';
@@ -204,11 +244,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [currentCameraFacing, updateSettings]);
 
   const startRecording = useCallback(() => {
-    if (!streamRef.current) {
+    const recordStream = activeStreamRef.current;
+    if (!recordStream) {
       logger.warn('Cannot start recording: no stream available');
       return;
     }
-    logger.info('Starting video recording');
+    logger.info('Starting video recording', { gyroEis: settings.gyroStabilizationEnabled && isStabilizing });
     chunksRef.current = [];
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
       ? 'video/webm;codecs=vp9'
@@ -216,7 +257,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ? 'video/webm'
         : 'video/mp4';
     logger.debug('Using MIME type for recording', { mimeType });
-    const recorder = new MediaRecorder(streamRef.current, { mimeType });
+    const recorder = new MediaRecorder(recordStream, { mimeType });
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.start(100);
     recorderRef.current = recorder;
@@ -246,7 +287,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
       recorder.stop();
     });
-  }, []);
+  }, [settings.gyroStabilizationEnabled, isStabilizing]);
 
   // ─── Initialize Camera on Startup ──────────────────────────────────────────
   useEffect(() => {
@@ -255,15 +296,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const videoCams = devices.filter(d => d.kind === 'videoinput');
       setHasMultipleCameras(videoCams.length > 1);
     }).catch(() => {});
+    detectUltraWideSupport(currentCameraFacing).then(setHasUltraWideSupport);
     return () => {
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      rawStreamRef.current?.getTracks().forEach(t => t.stop());
     };
   }, [currentCameraFacing, startStream]);
 
   // ─── Restart stream when settings change ────────────────────────────────────
   useEffect(() => {
     startStream(currentCameraFacing);
-  }, [settings.videoQuality, settings.soundEnabled, startStream, currentCameraFacing]);
+  }, [settings.videoQuality, settings.soundEnabled, settings.ultraWideEnabled, startStream, currentCameraFacing]);
 
   // ── Upload helpers ────────────────────────────────────────────────────────
   const setUploadState = useCallback((id: string, state: Partial<UploadState>) => {
@@ -523,7 +565,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       processingProgress,
       setProcessingProgress,
       // Camera
-      stream,
+      stream: activeStream,
       cameraError,
       isRecording,
       startRecording,
@@ -532,6 +574,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       currentCameraFacing,
       hasMultipleCameras,
       attachStreamToVideo,
+      ultraWideActive,
+      hasUltraWideSupport,
+      gyroStabilizationActive: settings.gyroStabilizationEnabled && isStabilizing,
+      recalibrateGyro,
+      requestGyroAccess,
     }}>
       {children}
     </AppContext.Provider>
