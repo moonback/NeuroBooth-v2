@@ -69,7 +69,7 @@ export function CountdownScreen() {
       {/* Header */}
       <div className="relative z-10 text-center animate-bounce-in">
         <Camera size={28} className="text-white/30 mx-auto mb-3" />
-        <p className="text-white/70 text-lg font-semibold tracking-wider uppercase leading-tight hud-text">
+        <p className="font-display text-white/70 text-lg font-semibold tracking-wider uppercase leading-tight hud-text">
           Préparez-vous...
         </p>
       </div>
@@ -109,14 +109,14 @@ export function CountdownScreen() {
         <div className="absolute inset-0 flex items-center justify-center">
           {count === 0 ? (
             <span
-              className="font-black text-white animate-ping-once drop-shadow-lg"
+              className="font-display font-black text-white animate-ping-once drop-shadow-lg"
               style={{ fontSize: 'clamp(3rem, 18vmin, 6rem)' }}
             >
               GO!
             </span>
           ) : (
             <span
-              className="font-black text-white countdown-number drop-shadow-xl"
+              className="font-display font-black text-white countdown-number drop-shadow-xl"
               style={{ fontSize: 'clamp(4.5rem, 22vmin, 9rem)' }}
             >
               {count}

@@ -9,6 +9,7 @@ import { PinModal } from './components/PinModal';
 import { ProcessingModal } from './components/ProcessingModal';
 import { MobileGate } from './components/MobileGate';
 import { useMobileEnv } from './hooks/useMobileEnv';
+import { getAppThemeStyle } from './lib/brandTheme';
 import { Download, X } from 'lucide-react';
 
 function AppInner({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { showInstallPrompt: boolean; onInstall: () => void; onCloseInstallPrompt: () => void }) {
@@ -30,7 +31,10 @@ function AppInner({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { show
   // We patch the screen flow at the WelcomeScreen level via AdminPanel
   return (
     <MobileGate>
-      <div className={`app-root theme-${settings.theme}${highBrightness ? ' high-brightness' : ''}`}>
+      <div
+        className={`app-root theme-${settings.theme}${highBrightness ? ' high-brightness' : ''}`}
+        style={getAppThemeStyle(settings)}
+      >
         {screen === 'welcome'   && <WelcomeScreen onAdmin={() => guardedSetScreen('admin')} />}
         {screen === 'countdown' && <CountdownScreen />}
         {screen === 'capture'   && <CaptureScreen />}

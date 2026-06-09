@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { haptics } from '../lib/haptics';
+import { useIdleTimer } from '../hooks/useIdleTimer';
+import { ScreensaverOverlay } from './ScreensaverOverlay';
 
 interface WelcomeScreenProps {
   onAdmin: () => void;
@@ -20,8 +22,14 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   const [visualTaps, setVisualTaps] = useState<{ id: number; x: number; y: number }[]>([]);
   const lastTapTimeRef = useRef(0);
   const tapIdRef = useRef(0);
-  const GESTURE_TIMEOUT = 1000; // 1 second timeout between taps
+  const GESTURE_TIMEOUT = 1000;
   const REQUIRED_TAPS = 5;
+
+  const { isIdle, wake } = useIdleTimer(
+    settings.screensaverDelaySeconds * 1000,
+    settings.screensaverEnabled,
+  );
+  const showScreensaver = settings.screensaverEnabled && isIdle;
 
   useEffect(() => {
     attachStreamToVideo(videoRef.current);
@@ -31,11 +39,11 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   }, [attachStreamToVideo]);
 
   const handleSecretTap = (e: React.MouseEvent<HTMLButtonElement>) => {
+    wake();
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    // Add visual feedback
+
     const id = tapIdRef.current++;
     setVisualTaps(prev => [...prev, { id, x, y }]);
     setTimeout(() => {
@@ -44,7 +52,6 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
 
     haptics.tap();
 
-    // Handle gesture logic
     const now = Date.now();
     const timeSinceLastTap = now - lastTapTimeRef.current;
     lastTapTimeRef.current = now;
@@ -62,126 +69,131 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
     }
   };
 
+  const handleStart = () => {
+    wake();
+    startNewCapture();
+  };
+
   return (
     <div className="welcome-screen theme-bg screen-layout--immersive flex flex-col items-center justify-between w-full relative overflow-hidden">
-      {/* Video preview background */}
       <div className="absolute inset-0 bg-black">
         <video
           ref={videoRef}
           autoPlay
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover transition-all duration-700 ${showScreensaver ? 'welcome-video--screensaver' : ''}`}
           style={{ transform: currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
         />
-        <div className="absolute inset-0 bg-black/50" />
+        <div className={`absolute inset-0 transition-colors duration-700 ${showScreensaver ? 'bg-black/60' : 'bg-black/50'}`} />
       </div>
 
-      {/* Animated background rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="ring ring-1" />
-        <div className="ring ring-2" />
-        <div className="ring ring-3" />
-        <div className="ring ring-4" />
-      </div>
-
-      {/* Top bar */}
-      <div className="w-full flex justify-between items-center z-10 relative hud-top">
-        <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hud-badge hud-text">
-          {isOnline
-            ? <Wifi size={14} className="text-emerald-400" />
-            : <WifiOff size={14} className="text-yellow-400" />}
-          <span className={isOnline ? 'text-emerald-400' : 'text-yellow-400'}>
-            {isOnline ? 'En ligne' : 'Hors ligne'}
-          </span>
+      {!showScreensaver && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="ring ring-1" />
+          <div className="ring ring-2" />
+          <div className="ring ring-3" />
+          <div className="ring ring-4" />
         </div>
-        {/* Secret gesture area - centered top */}
-        <button
-          onClick={handleSecretTap}
-          className="touch-target absolute left-1/2 -translate-x-1/2 rounded-full relative overflow-visible border border-transparent hover:border-white/10 transition-all"
-          aria-label="Secret gesture zone"
-        >
-          {/* Tap count indicator */}
-          {tapCount > 0 && (
-            <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm border border-white/20 flex items-center gap-2">
-              {[...Array(REQUIRED_TAPS)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-2 h-2 rounded-full ${i < tapCount ? 'bg-purple-400' : 'bg-white/30'}`} 
+      )}
+
+      {!showScreensaver && (
+        <>
+          <div className="w-full flex justify-between items-center z-10 relative hud-top">
+            <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hud-badge hud-text">
+              {isOnline
+                ? <Wifi size={14} className="text-emerald-400" />
+                : <WifiOff size={14} className="text-yellow-400" />}
+              <span className={isOnline ? 'text-emerald-400' : 'text-yellow-400'}>
+                {isOnline ? 'En ligne' : 'Hors ligne'}
+              </span>
+            </div>
+            <button
+              onClick={handleSecretTap}
+              className="touch-target absolute left-1/2 -translate-x-1/2 rounded-full relative overflow-visible border border-transparent hover:border-white/10 transition-all"
+              aria-label="Secret gesture zone"
+            >
+              {tapCount > 0 && (
+                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm border border-white/20 flex items-center gap-2">
+                  {[...Array(REQUIRED_TAPS)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${i < tapCount ? 'bg-purple-400' : 'bg-white/30'}`}
+                    />
+                  ))}
+                </div>
+              )}
+              {visualTaps.map(tap => (
+                <div
+                  key={tap.id}
+                  className="absolute w-12 h-12 rounded-full bg-white/40 pointer-events-none animate-ping"
+                  style={{ left: tap.x - 24, top: tap.y - 24 }}
                 />
               ))}
+            </button>
+            <div className="w-24" />
+          </div>
+
+          <div className="screen-content flex flex-col items-center gap-10 z-10">
+            <div className="relative animate-float">
+              {settings.eventLogo ? (
+                <div className="relative">
+                  <img
+                    src={settings.eventLogo}
+                    alt="Logo"
+                    className="w-36 h-36 object-contain rounded-3xl shadow-2xl"
+                  />
+                  <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="w-36 h-36 rounded-3xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-accent/40">
+                    <Camera size={64} className="text-white" />
+                  </div>
+                  <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
+                </div>
+              )}
             </div>
-          )}
-          
-          {/* Visual tap animations */}
-          {visualTaps.map(tap => (
-            <div
-              key={tap.id}
-              className="absolute w-12 h-12 rounded-full bg-white/40 pointer-events-none animate-ping"
-              style={{
-                left: tap.x - 24,
-                top: tap.y - 24,
-              }}
-            />
-          ))}
-        </button>
-        <div className="w-24"></div> {/* Spacer to keep balance */}
-      </div>
 
-      {/* Center content */}
-      <div className="screen-content flex flex-col items-center gap-10 z-10">
-        {/* Logo */}
-        <div className="relative animate-float">
-          {settings.eventLogo ? (
-            <div className="relative">
-              <img
-                src={settings.eventLogo}
-                alt="Logo"
-                className="w-36 h-36 object-contain rounded-3xl shadow-2xl"
-              />
-              <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
+            <div className="text-center animate-bounce-in">
+              <h1 className="font-display text-4xl font-bold tracking-tight text-white leading-tight mb-2 preview-overlay-text">
+                {settings.eventName}
+              </h1>
+              <p className="text-white/40 text-base tracking-widest uppercase flex items-center justify-center gap-2">
+                <Zap size={16} className="text-yellow-400" />
+                NeuroBooth 360°
+              </p>
             </div>
-          ) : (
-            <div className="relative">
-              <div className="w-36 h-36 rounded-3xl theme-accent-bg flex items-center justify-center shadow-2xl shadow-accent/40">
-                <Camera size={64} className="text-white" />
-              </div>
-              <div className="absolute -inset-4 rounded-3xl border-2 theme-accent-border opacity-30" />
-            </div>
-          )}
-        </div>
 
-        {/* Event name */}
-        <div className="text-center animate-bounce-in">
-          <h1 className="text-4xl font-black tracking-tight text-white leading-tight mb-2 preview-overlay-text">
-            {settings.eventName}
-          </h1>
-          <p className="text-white/40 text-base tracking-widest uppercase flex items-center justify-center gap-2">
-            <Zap size={16} className="text-yellow-400" />
-            NeuroBooth 360°
-          </p>
-        </div>
+            <button
+              onClick={handleStart}
+              className="cta-button group relative mt-2 px-14 py-5 rounded-full text-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-105 active:scale-[0.98] animate-bounce-in"
+            >
+              <span className="relative z-10 flex items-center gap-3">
+                Commencer
+                <ChevronRight size={24} className="group-hover:translate-x-2 transition-transform" />
+              </span>
+              <div className="cta-shine" />
+            </button>
 
-        {/* CTA */}
-        <button
-          onClick={startNewCapture}
-          className="cta-button group relative mt-2 px-14 py-5 rounded-full text-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-105 active:scale-[0.98] animate-bounce-in"
-        >
-          <span className="relative z-10 flex items-center gap-3">
-            Commencer
-            <ChevronRight size={24} className="group-hover:translate-x-2 transition-transform" />
-          </span>
-          <div className="cta-shine" />
-        </button>
+            <p className="text-white/30 text-sm animate-bounce-in">
+              Appuyez pour lancer votre expérience 360°
+            </p>
+          </div>
 
-        <p className="text-white/30 text-sm animate-bounce-in">
-          Appuyez pour lancer votre expérience 360°
-        </p>
-      </div>
+          <div className="z-10 text-white/15 text-xs screen-action-zone">
+            NeuroBooth 360 &copy; {new Date().getFullYear()}
+          </div>
+        </>
+      )}
 
-      <div className="z-10 text-white/15 text-xs screen-action-zone">
-        NeuroBooth 360 &copy; {new Date().getFullYear()}
-      </div>
+      {showScreensaver && (
+        <ScreensaverOverlay
+          eventName={settings.eventName}
+          eventLogo={settings.eventLogo}
+          onWake={wake}
+        />
+      )}
     </div>
   );
 }

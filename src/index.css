@@ -11,6 +11,7 @@
   --action-zone-gap: 24px;
   --touch-min: 48px;
   --cta-min-height: 56px;
+  --font-display: 'Clash Display', 'Inter', system-ui, sans-serif;
 }
 
 /* ===== Base Reset ===== */
@@ -172,6 +173,22 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   --bg: #06040a;
   --bg-card: #180f18;
   --ring-color: rgba(244,63,94,0.08);
+}
+
+/* ===== Theme: Brand (vars injectées depuis l'admin) ===== */
+.theme-brand {
+  --accent: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.3);
+  --accent-dim: rgba(59, 130, 246, 0.15);
+  --bg: #0a0a0a;
+  --bg-card: #141414;
+  --ring-color: rgba(59, 130, 246, 0.08);
+}
+
+/* ===== Typographie display (D6) ===== */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 /* ===== Theme utilities ===== */
@@ -361,6 +378,69 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     0 0 40px var(--accent-glow);
 }
 
+/* ===== Écran veille (D8) ===== */
+.welcome-video--screensaver {
+  filter: blur(14px) brightness(0.55) saturate(0.85);
+  transform: scale(1.08);
+  transition: filter 0.8s ease, transform 0.8s ease;
+}
+
+.screensaver-overlay {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: none;
+  cursor: pointer;
+}
+
+.screensaver-overlay__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 65%);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.screensaver-logo-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screensaver-logo {
+  animation: screensaver-float 4s ease-in-out infinite;
+}
+
+.screensaver-logo-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  pointer-events: none;
+  animation: expand 5s ease-out infinite;
+}
+
+.screensaver-logo-ring--1 { width: 200px; height: 200px; opacity: 0.2; }
+.screensaver-logo-ring--2 { width: 280px; height: 280px; opacity: 0.1; animation-delay: 1.5s; }
+
+.screensaver-title {
+  text-shadow: 0 0 40px var(--accent-glow);
+}
+
+@keyframes screensaver-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-14px) scale(1.04); }
+}
+
+.animate-screensaver-pulse {
+  animation: screensaver-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes screensaver-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
 /* ===== Landscape blocker (CSS fallback) ===== */
 .landscape-blocker { display: none; }
 
@@ -382,7 +462,10 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   .ring { animation: none; opacity: 0.3; }
   .animate-float,
   .animate-bounce-in,
-  .animate-shimmer { animation: none; }
+  .animate-shimmer,
+  .screensaver-logo,
+  .animate-screensaver-pulse { animation: none; }
+  .screensaver-logo-ring { display: none; }
 }
 
 /* ===== Shimmer animation ===== */

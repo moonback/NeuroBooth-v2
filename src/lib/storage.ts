@@ -338,6 +338,11 @@ function rowToSettings(row: SettingsRow): Settings {
     ultraWideEnabled: row.ultra_wide_enabled ?? false,
     gyroStabilizationEnabled: row.gyro_stabilization_enabled ?? false,
     gyroStabilizationStrength: row.gyro_stabilization_strength ?? 0.7,
+    brandAccentColor: row.brand_accent_color ?? '#3b82f6',
+    brandBgColor: row.brand_bg_color ?? '#0a0a0a',
+    displayFont: (row.display_font as Settings['displayFont']) ?? 'clash',
+    screensaverEnabled: row.screensaver_enabled ?? true,
+    screensaverDelaySeconds: row.screensaver_delay_seconds ?? 60,
   };
 }
 
@@ -367,6 +372,11 @@ function settingsToRow(settings: Settings): Omit<SettingsRow, 'updated_at'> {
     ultra_wide_enabled: settings.ultraWideEnabled,
     gyro_stabilization_enabled: settings.gyroStabilizationEnabled,
     gyro_stabilization_strength: settings.gyroStabilizationStrength,
+    brand_accent_color: settings.brandAccentColor,
+    brand_bg_color: settings.brandBgColor,
+    display_font: settings.displayFont,
+    screensaver_enabled: settings.screensaverEnabled,
+    screensaver_delay_seconds: settings.screensaverDelaySeconds,
   };
 }
 

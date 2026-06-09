@@ -2,7 +2,9 @@ export type AppScreen = 'welcome' | 'countdown' | 'capture' | 'preview' | 'admin
 
 export type VideoQuality = 'low' | 'medium' | 'high' | '4k';
 
-export type AppTheme = 'dark' | 'neon' | 'elegant' | 'party';
+export type AppTheme = 'dark' | 'neon' | 'elegant' | 'party' | 'brand';
+
+export type DisplayFont = 'inter' | 'satoshi' | 'clash';
 
 export type CameraFacing = 'user' | 'environment';
 
@@ -34,6 +36,11 @@ export interface Settings {
   ultraWideEnabled: boolean;
   gyroStabilizationEnabled: boolean;
   gyroStabilizationStrength: number; // 0.3 to 1.0
+  brandAccentColor: string;
+  brandBgColor: string;
+  displayFont: DisplayFont;
+  screensaverEnabled: boolean;
+  screensaverDelaySeconds: number;
 }
 
 export interface CaptureRecord {
@@ -89,4 +96,9 @@ export const DEFAULT_SETTINGS: Settings = {
   ultraWideEnabled: false,
   gyroStabilizationEnabled: false,
   gyroStabilizationStrength: 0.7,
+  brandAccentColor: '#3b82f6',
+  brandBgColor: '#0a0a0a',
+  displayFont: 'clash',
+  screensaverEnabled: true,
+  screensaverDelaySeconds: 60,
 };

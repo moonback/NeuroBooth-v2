@@ -1,11 +1,12 @@
 
 import React, { useRef } from 'react';
-import { Settings, AppTheme, VideoQuality, CameraFacing } from '../../types';
+import { Settings, AppTheme, VideoQuality, CameraFacing, DisplayFont } from '../../types';
 import {
   Upload, RotateCcw, Palette, Zap, Crown, Sparkles, Check,
   Calendar, Image as ImageIcon, Camera, Volume2,
-  FastForward, Shield, Lock, Maximize2, Crosshair,
+  FastForward, Shield, Lock, Maximize2, Crosshair, Brush, Type, Moon,
 } from 'lucide-react';
+import { hexToRgba } from '../../lib/brandTheme';
 import { Toggle, AdminInput, AdminButton } from './ui';
  
 interface SettingsPanelProps {
@@ -87,6 +88,12 @@ const THEMES: {
     icon: <Sparkles size={15} />,
     description: 'Fun, dégradé animé',
   },
+];
+
+const DISPLAY_FONTS: { value: DisplayFont; label: string; sample: string }[] = [
+  { value: 'clash', label: 'Clash Display', sample: 'Premium & impactant' },
+  { value: 'satoshi', label: 'Satoshi', sample: 'Moderne & géométrique' },
+  { value: 'inter', label: 'Inter', sample: 'Neutre & lisible' },
 ];
  
 const QUALITIES: { value: VideoQuality; label: string; sub: string }[] = [
@@ -471,7 +478,17 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
         />
 
         <div className="grid grid-cols-2 gap-2">
-          {THEMES.map(t => {
+          {[
+            ...THEMES,
+            {
+              value: 'brand' as AppTheme,
+              label: 'Brand',
+              accent: settings.brandAccentColor,
+              glow: hexToRgba(settings.brandAccentColor, 0.15),
+              icon: <Brush size={15} />,
+              description: 'White-label événementiel',
+            },
+          ].map(t => {
             const active = settings.theme === t.value;
             return (
               <button
@@ -531,6 +548,89 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
               </button>
             );
           })}
+        </div>
+
+        {settings.theme === 'brand' && (
+          <div className="mt-5 space-y-4 pt-5 border-t border-white/[0.06]">
+            <p className={TOKEN.label}>Personnalisation Brand</p>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-2 bg-white/[0.025] rounded-xl p-3 border border-white/[0.05]">
+                <span className="text-white/50 text-xs">Couleur accent</span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={settings.brandAccentColor}
+                    onChange={e => updateSettings({ brandAccentColor: e.target.value })}
+                    className="w-12 h-12 rounded-lg border-0 bg-transparent cursor-pointer touch-target-sm"
+                  />
+                  <span className="text-white/70 text-sm font-mono">{settings.brandAccentColor}</span>
+                </div>
+              </label>
+              <label className="flex flex-col gap-2 bg-white/[0.025] rounded-xl p-3 border border-white/[0.05]">
+                <span className="text-white/50 text-xs">Fond</span>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={settings.brandBgColor}
+                    onChange={e => updateSettings({ brandBgColor: e.target.value })}
+                    className="w-12 h-12 rounded-lg border-0 bg-transparent cursor-pointer touch-target-sm"
+                  />
+                  <span className="text-white/70 text-sm font-mono">{settings.brandBgColor}</span>
+                </div>
+              </label>
+            </div>
+            <p className="text-white/25 text-[11px]">
+              Le logo événement est importé dans la section Événement ci-dessus.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-5 space-y-3 pt-5 border-t border-white/[0.06]">
+          <p className={TOKEN.label}>
+            <Type size={12} className="inline mr-1" />
+            Police des titres
+          </p>
+          <div className="flex flex-col gap-2">
+            {DISPLAY_FONTS.map(f => {
+              const active = settings.displayFont === f.value;
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => updateSettings({ displayFont: f.value })}
+                  className={`touch-target flex items-center justify-between px-4 rounded-xl border text-left transition-all ${
+                    active ? 'border-white/15 bg-white/[0.04]' : 'border-white/[0.05] bg-white/[0.02]'
+                  }`}
+                >
+                  <div>
+                    <span className="text-white/80 text-sm font-medium block">{f.label}</span>
+                    <span className="text-white/30 text-[11px]">{f.sample}</span>
+                  </div>
+                  {active && <Check size={16} className="theme-accent-text" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-3 pt-5 border-t border-white/[0.06]">
+          <ToggleRow
+            icon={<Moon size={14} />}
+            title="Écran veille"
+            sub="Preview floutée + logo animé entre les sessions"
+            checked={settings.screensaverEnabled}
+            onChange={v => updateSettings({ screensaverEnabled: v })}
+          />
+          {settings.screensaverEnabled && (
+            <SliderRow
+              label="Délai d'inactivité"
+              value={settings.screensaverDelaySeconds}
+              display={`${settings.screensaverDelaySeconds}s`}
+              min={15}
+              max={180}
+              step={15}
+              onChange={v => updateSettings({ screensaverDelaySeconds: v })}
+            />
+          )}
         </div>
       </section>
 

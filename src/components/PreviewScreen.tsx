@@ -247,7 +247,7 @@ export function PreviewScreen() {
       {/* En-tête : titre + statut cloud */}
       <header className="preview-screen__header flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 preview-overlay-text">
+          <h2 className="font-display text-lg font-bold text-white flex items-center gap-2 preview-overlay-text">
             <Camera size={16} className="theme-accent-text shrink-0" />
             Votre vidéo
           </h2>
