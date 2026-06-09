@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['favicon.ico', 'icon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'NeuroBooth 360',
         short_name: 'Photobooth',
