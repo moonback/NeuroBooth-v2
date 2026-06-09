@@ -1,18 +1,63 @@
 import { logger } from './logger';
+import {
+  VideoOverlayConfig,
+  drawVideoOverlays,
+  preloadOverlayAssets,
+} from './videoOverlay';
 
 export interface SlowMotionOptions {
-  slowMotionFactor: number; // 0.1 to 1
-  slowMotionStartPercent: number; // 0-100
-  slowMotionDurationPercent: number; // 0-100
+  slowMotionFactor: number;
+  slowMotionStartPercent: number;
+  slowMotionDurationPercent: number;
 }
 
-export async function applySlowMotion(
-  videoBlob: Blob,
+export interface VideoProcessOptions {
+  overlays?: VideoOverlayConfig;
+  slowMotion?: SlowMotionOptions;
+}
+
+function pickMimeType(): string {
+  if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) return 'video/webm;codecs=vp9';
+  if (MediaRecorder.isTypeSupported('video/webm')) return 'video/webm';
+  return 'video/mp4';
+}
+
+export function computeSlowMotionDuration(
+  originalDurationSeconds: number,
   options: SlowMotionOptions,
+): number {
+  const slowStart = (options.slowMotionStartPercent / 100) * originalDurationSeconds;
+  const slowDuration = (options.slowMotionDurationPercent / 100) * originalDurationSeconds;
+  const slowEnd = Math.min(slowStart + slowDuration, originalDurationSeconds);
+  const normalPart1 = slowStart;
+  const slowPart = slowDuration / options.slowMotionFactor;
+  const normalPart2 = originalDurationSeconds - slowEnd;
+  return normalPart1 + slowPart + normalPart2;
+}
+
+export async function processVideo(
+  videoBlob: Blob,
+  options: VideoProcessOptions,
   originalDurationSeconds: number,
   onProgress?: (progress: number) => void,
 ): Promise<Blob> {
-  logger.info('Starting slow motion video processing', { options, originalDurationSeconds });
+  const hasOverlays = !!(
+    options.overlays?.watermarkText || options.overlays?.eventLogoDataUrl
+  );
+  const hasSlowMotion = !!options.slowMotion;
+
+  if (!hasOverlays && !hasSlowMotion) return videoBlob;
+
+  logger.info('Starting video post-processing', {
+    hasOverlays,
+    hasSlowMotion,
+    originalDurationSeconds,
+  });
+
+  const logoImage = hasOverlays && options.overlays
+    ? await preloadOverlayAssets(options.overlays)
+    : null;
+
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     video.src = URL.createObjectURL(videoBlob);
@@ -21,71 +66,50 @@ export async function applySlowMotion(
     video.preload = 'auto';
 
     const originalDuration = originalDurationSeconds;
-    const slowStart = (options.slowMotionStartPercent / 100) * originalDuration;
-    const slowDuration = (options.slowMotionDurationPercent / 100) * originalDuration;
-    const slowEnd = Math.min(slowStart + slowDuration, originalDuration);
+    const slowOpts = options.slowMotion;
+    const slowStart = slowOpts
+      ? (slowOpts.slowMotionStartPercent / 100) * originalDuration
+      : 0;
+    const slowDuration = slowOpts
+      ? (slowOpts.slowMotionDurationPercent / 100) * originalDuration
+      : 0;
+    const slowEnd = slowOpts
+      ? Math.min(slowStart + slowDuration, originalDuration)
+      : 0;
     const normalPart1 = slowStart;
-    const slowPart = slowDuration / options.slowMotionFactor;
-    const normalPart2 = originalDuration - slowEnd;
-    const newDuration = normalPart1 + slowPart + normalPart2;
+    const slowPart = slowOpts ? slowDuration / slowOpts.slowMotionFactor : 0;
+    const newDuration = slowOpts
+      ? computeSlowMotionDuration(originalDuration, slowOpts)
+      : originalDuration;
 
-    video.onloadedmetadata = async () => {
-      logger.info('Video metadata loaded', {
-        width: video.videoWidth,
-        height: video.videoHeight,
-        metadataDuration: video.duration,
-        usedDuration: originalDuration,
-      });
-
+    video.onloadedmetadata = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) {
-        const errorMsg = 'Could not get canvas context';
-        logger.error(errorMsg);
-        reject(new Error(errorMsg));
+        reject(new Error('Could not get canvas context'));
         return;
       }
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      logger.debug('Calculated slow motion timings', {
-        originalDuration,
-        slowStart,
-        slowDuration,
-        slowEnd,
-      });
-      logger.debug('Estimated new duration after slow motion', { newDuration });
-
+      const mimeType = pickMimeType();
       const stream = canvas.captureStream(30);
-      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-        ? 'video/webm;codecs=vp9'
-        : MediaRecorder.isTypeSupported('video/webm')
-          ? 'video/webm'
-          : 'video/mp4';
-      logger.debug('Using MIME type for processed video', { mimeType });
       const recorder = new MediaRecorder(stream, { mimeType });
       const chunks: BlobPart[] = [];
+
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
+        if (e.data.size > 0) chunks.push(e.data);
       };
+
       recorder.onstop = () => {
-        logger.info('Video processing recorder stopped, creating final blob');
         const newBlob = new Blob(chunks, { type: mimeType });
-        logger.info('Final slow-motion video blob created', {
-          size: newBlob.size,
-          mimeType: newBlob.type,
-          chunkCount: chunks.length,
-        });
         URL.revokeObjectURL(video.src);
+        logger.info('Video post-processing complete', { size: newBlob.size, mimeType });
         resolve(newBlob);
       };
-      recorder.onerror = (err) => {
-        logger.error('Video processing recorder error', { error: err });
-        reject(err);
-      };
+
+      recorder.onerror = (err) => reject(err);
 
       let isRecording = false;
       let animationFrameId: number | null = null;
@@ -93,68 +117,75 @@ export async function applySlowMotion(
       const drawFrame = () => {
         if (!isRecording) return;
         ctx.drawImage(video, 0, 0);
+        if (hasOverlays && options.overlays) {
+          drawVideoOverlays(ctx, canvas.width, canvas.height, options.overlays, logoImage);
+        }
         animationFrameId = requestAnimationFrame(drawFrame);
       };
 
-      video.addEventListener('timeupdate', () => {
-        const currentTime = video.currentTime;
-        const totalEstimatedTime = newDuration;
-        
-        let processedTime = 0;
-        if (currentTime < slowStart) {
-          processedTime = currentTime;
-        } else if (currentTime < slowEnd) {
-          processedTime = normalPart1 + (currentTime - slowStart) / options.slowMotionFactor;
-        } else {
-          processedTime = normalPart1 + slowPart + (currentTime - slowEnd);
-        }
-        
-        const progress = Math.min(100, Math.max(0, (processedTime / totalEstimatedTime) * 100));
-        if (onProgress) onProgress(progress);
-        
-        if (currentTime >= slowStart && currentTime < slowEnd) {
-          if (video.playbackRate !== options.slowMotionFactor) {
-            logger.debug('Entering slow motion zone', { currentTime, playbackRate: options.slowMotionFactor });
-            video.playbackRate = options.slowMotionFactor;
+      if (hasSlowMotion && slowOpts) {
+        video.addEventListener('timeupdate', () => {
+          const currentTime = video.currentTime;
+          let processedTime = 0;
+
+          if (currentTime < slowStart) {
+            processedTime = currentTime;
+          } else if (currentTime < slowEnd) {
+            processedTime = normalPart1 + (currentTime - slowStart) / slowOpts.slowMotionFactor;
+          } else {
+            processedTime = normalPart1 + slowPart + (currentTime - slowEnd);
           }
-        } else {
-          if (video.playbackRate !== 1) {
-            logger.debug('Leaving slow motion zone', { currentTime, playbackRate: 1 });
+
+          onProgress?.(Math.min(100, Math.max(0, (processedTime / newDuration) * 100)));
+
+          if (currentTime >= slowStart && currentTime < slowEnd) {
+            if (video.playbackRate !== slowOpts.slowMotionFactor) {
+              video.playbackRate = slowOpts.slowMotionFactor;
+            }
+          } else if (video.playbackRate !== 1) {
             video.playbackRate = 1;
           }
-        }
-      });
+        });
+      } else {
+        video.addEventListener('timeupdate', () => {
+          const progress = Math.min(100, (video.currentTime / originalDuration) * 100);
+          onProgress?.(progress);
+        });
+      }
 
       video.addEventListener('ended', () => {
-        logger.info('Original video ended, stopping recorder');
-        if (onProgress) onProgress(100);
+        onProgress?.(100);
         video.pause();
         recorder.stop();
         isRecording = false;
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
       });
 
-      const handleCanPlay = async () => {
-        logger.info('Video ready, starting processing');
+      video.addEventListener('canplay', async () => {
         video.currentTime = 0;
         video.playbackRate = 1;
-        
         isRecording = true;
         recorder.start(100);
         drawFrame();
-        
-        logger.info('Starting video playback for processing');
         await video.play();
-      };
-
-      video.addEventListener('canplay', handleCanPlay, { once: true });
+      }, { once: true });
     };
 
-    video.onerror = (err) => {
-      logger.error('Video element error during slow motion processing', { error: err });
-      reject(err);
-    };
+    video.onerror = () => reject(new Error('Video element error during processing'));
   });
+}
+
+/** @deprecated Use processVideo instead */
+export async function applySlowMotion(
+  videoBlob: Blob,
+  options: SlowMotionOptions,
+  originalDurationSeconds: number,
+  onProgress?: (progress: number) => void,
+): Promise<Blob> {
+  return processVideo(
+    videoBlob,
+    { slowMotion: options },
+    originalDurationSeconds,
+    onProgress,
+  );
 }

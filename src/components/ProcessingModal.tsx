@@ -20,7 +20,7 @@ export function ProcessingModal() {
           Traitement en cours...
         </h2>
         <p className="text-white/60 mb-8 text-sm leading-relaxed">
-          Nous appliquons le ralenti à votre vidéo, ça ne prendra que quelques instants !
+          Incrustation du branding et effets vidéo en cours, ça ne prendra que quelques instants !
         </p>
         <div className="w-full h-2.5 bg-white/15 rounded-full overflow-hidden mb-4 shadow-inner">
           <div

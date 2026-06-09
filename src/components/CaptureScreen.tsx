@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { useMotor } from '../hooks/useMotor';
-import { FlipHorizontal, Square, Mic, MicOff, Maximize2, Crosshair } from 'lucide-react';
+import { FlipHorizontal, Square, Mic, MicOff, Maximize2, Crosshair, Aperture } from 'lucide-react';
 import { logger } from '../lib/logger';
 import { haptics } from '../lib/haptics';
 
@@ -12,6 +12,7 @@ export function CaptureScreen() {
     startRecording, stopRecording, switchCamera, hasMultipleCameras,
     currentCameraFacing, attachStreamToVideo,
     ultraWideActive, gyroStabilizationActive, recalibrateGyro,
+    lockCameraExposure, unlockCameraExposure, afAeLocked,
   } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -39,6 +40,8 @@ export function CaptureScreen() {
       await motor.stopMotor();
     }
 
+    await unlockCameraExposure();
+
     logger.info('Camera stop recording initiated');
     const blob = await stopRecording();
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -52,7 +55,7 @@ export function CaptureScreen() {
       logger.warn('No blob returned from camera, returning to welcome screen');
       setScreen('welcome');
     }
-  }, [phase, stopRecording, motor, settings, finishCapture, setScreen]);
+  }, [phase, stopRecording, motor, settings, finishCapture, setScreen, unlockCameraExposure]);
 
   useEffect(() => {
     if (cameraError) return;
@@ -63,6 +66,9 @@ export function CaptureScreen() {
         logger.info('Camera start recording called');
         if (settings.gyroStabilizationEnabled) {
           recalibrateGyro();
+        }
+        if (settings.lockAfAeEnabled) {
+          await lockCameraExposure();
         }
         startRecording();
         startTimeRef.current = Date.now();
@@ -84,7 +90,11 @@ export function CaptureScreen() {
       }, 500);
       return () => clearTimeout(t);
     }
-  }, [stream, cameraError, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, settings.gyroStabilizationEnabled, motor.isConnected, startRecording, recalibrateGyro]);
+  }, [stream, cameraError, phase, settings.motorEnabled, settings.motorSyncRecording, settings.motorSpeed, settings.motorDirection, settings.gyroStabilizationEnabled, settings.lockAfAeEnabled, motor.isConnected, startRecording, recalibrateGyro, lockCameraExposure]);
+
+  useEffect(() => {
+    return () => { unlockCameraExposure(); };
+  }, [unlockCameraExposure]);
 
   useEffect(() => {
     if (phase === 'recording' && elapsed >= settings.captureDuration) {
@@ -156,6 +166,12 @@ export function CaptureScreen() {
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-300 text-[10px] font-bold uppercase tracking-wide">
               <Crosshair size={12} />
               EIS
+            </span>
+          )}
+          {afAeLocked && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-[10px] font-bold uppercase tracking-wide">
+              <Aperture size={12} />
+              AF/AE
             </span>
           )}
           {settings.soundEnabled
@@ -233,6 +249,17 @@ export function CaptureScreen() {
           )}
         </div>
       </div>
+
+      {/* Logo preview (burned into export via canvas) */}
+      {settings.eventLogo && (
+        <div className="absolute bottom-24 left-4 pointer-events-none z-10 opacity-85">
+          <img
+            src={settings.eventLogo}
+            alt=""
+            className="max-w-[18vw] max-h-[8vh] object-contain drop-shadow-md"
+          />
+        </div>
+      )}
 
       {/* 360 watermark overlay */}
       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none z-10">

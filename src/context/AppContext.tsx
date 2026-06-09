@@ -32,7 +32,8 @@ import {
   saveSettingsToCloud,
   UploadProgress,
 } from '../lib/storage';
-import { applySlowMotion } from '../lib/videoProcessor';
+import { processVideo, computeSlowMotionDuration } from '../lib/videoProcessor';
+import { lockFocusAndExposure, unlockFocusAndExposure } from '../lib/cameraLock';
 import { logger } from '../lib/logger';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 
@@ -83,6 +84,9 @@ interface AppContextValue {
   gyroStabilizationActive: boolean;
   recalibrateGyro: () => void;
   requestGyroAccess: () => Promise<boolean>;
+  lockCameraExposure: () => Promise<boolean>;
+  unlockCameraExposure: () => Promise<void>;
+  afAeLocked: boolean;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -169,6 +173,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [ultraWideActive, setUltraWideActive] = useState(false);
   const [hasUltraWideSupport, setHasUltraWideSupport] = useState(false);
+  const [afAeLocked, setAfAeLocked] = useState(false);
 
   const {
     outputStream: stabilizedStream,
@@ -194,6 +199,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [activeStream]);
 
   const requestGyroAccess = useCallback(() => requestGyroPermission(), []);
+
+  const lockCameraExposure = useCallback(async (): Promise<boolean> => {
+    const stream = rawStreamRef.current;
+    if (!stream || !settings.lockAfAeEnabled) return false;
+    const locked = await lockFocusAndExposure(stream);
+    setAfAeLocked(locked);
+    return locked;
+  }, [settings.lockAfAeEnabled]);
+
+  const unlockCameraExposure = useCallback(async () => {
+    const stream = rawStreamRef.current;
+    if (!stream) return;
+    await unlockFocusAndExposure(stream);
+    setAfAeLocked(false);
+  }, []);
 
   // ─── Camera Functions ───────────────────────────────────────────────────────
   const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null) => {
@@ -391,28 +411,52 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let processedBlob = blob;
     let newDuration = duration;
 
-    setIsProcessing(true);
-    setProcessingProgress(0);
+    const needsBurnIn =
+      (settings.showWatermark && !!settings.watermarkText) || !!settings.eventLogo;
+    const needsProcessing = settings.slowMotionEnabled || needsBurnIn;
 
-    if (settings.slowMotionEnabled) {
-      logger.info('AppContext: applying slow motion');
+    if (needsProcessing) {
+      setIsProcessing(true);
+      setProcessingProgress(0);
+    }
+
+    if (needsProcessing) {
+      logger.info('AppContext: post-processing video', {
+        burnIn: needsBurnIn,
+        slowMotion: settings.slowMotionEnabled,
+      });
       try {
-        processedBlob = await applySlowMotion(blob, {
-          slowMotionFactor: settings.slowMotionFactor,
-          slowMotionStartPercent: settings.slowMotionStartPercent,
-          slowMotionDurationPercent: settings.slowMotionDurationPercent,
-        }, duration, (progress) => {
-          setProcessingProgress(progress);
-        });
-        
-        // Calculate new duration based on slow motion settings
-        const normalPart1 = (settings.slowMotionStartPercent / 100) * duration;
-        const slowPart = ((settings.slowMotionDurationPercent / 100) * duration) / settings.slowMotionFactor;
-        const normalPart2 = duration - ((settings.slowMotionStartPercent + settings.slowMotionDurationPercent) / 100) * duration;
-        newDuration = normalPart1 + slowPart + normalPart2;
-        logger.info('AppContext: slow motion applied', { newDuration });
+        processedBlob = await processVideo(
+          blob,
+          {
+            overlays: needsBurnIn
+              ? {
+                  watermarkText: settings.showWatermark ? settings.watermarkText : undefined,
+                  eventLogoDataUrl: settings.eventLogo || undefined,
+                }
+              : undefined,
+            slowMotion: settings.slowMotionEnabled
+              ? {
+                  slowMotionFactor: settings.slowMotionFactor,
+                  slowMotionStartPercent: settings.slowMotionStartPercent,
+                  slowMotionDurationPercent: settings.slowMotionDurationPercent,
+                }
+              : undefined,
+          },
+          duration,
+          (progress) => setProcessingProgress(progress),
+        );
+
+        if (settings.slowMotionEnabled) {
+          newDuration = computeSlowMotionDuration(duration, {
+            slowMotionFactor: settings.slowMotionFactor,
+            slowMotionStartPercent: settings.slowMotionStartPercent,
+            slowMotionDurationPercent: settings.slowMotionDurationPercent,
+          });
+        }
+        logger.info('AppContext: post-processing complete', { newDuration });
       } catch (error) {
-        logger.error('AppContext: error applying slow motion', { error: (error as Error).message });
+        logger.error('AppContext: post-processing failed', { error: (error as Error).message });
         processedBlob = blob;
       }
     }
@@ -435,9 +479,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCaptures(prev => [record, ...prev]);
     setCurrentCapture(record);
     
-    setIsProcessing(false);
-    setProcessingProgress(0);
-    
+    if (needsProcessing) {
+      setIsProcessing(false);
+      setProcessingProgress(0);
+    }
+
     logger.info('AppContext: switching to preview screen');
     setScreen('preview');
 
@@ -448,7 +494,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       logger.info('AppContext: device is offline, setting upload state to idle');
       setUploadState(id, { status: 'idle', progress: 0 });
     }
-  }, [settings.eventName, settings.slowMotionEnabled, settings.slowMotionFactor, settings.slowMotionStartPercent, settings.slowMotionDurationPercent, isOnline, runUpload, setUploadState]);
+  }, [
+    settings.eventName,
+    settings.showWatermark,
+    settings.watermarkText,
+    settings.eventLogo,
+    settings.slowMotionEnabled,
+    settings.slowMotionFactor,
+    settings.slowMotionStartPercent,
+    settings.slowMotionDurationPercent,
+    isOnline,
+    runUpload,
+    setUploadState,
+  ]);
 
   // ── Manual retry for a single capture ────────────────────────────────────
   const retryUpload = useCallback(async (id: string) => {
@@ -579,6 +637,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       gyroStabilizationActive: settings.gyroStabilizationEnabled && isStabilizing,
       recalibrateGyro,
       requestGyroAccess,
+      lockCameraExposure,
+      unlockCameraExposure,
+      afAeLocked,
     }}>
       {children}
     </AppContext.Provider>

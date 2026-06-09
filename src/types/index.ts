@@ -41,6 +41,7 @@ export interface Settings {
   displayFont: DisplayFont;
   screensaverEnabled: boolean;
   screensaverDelaySeconds: number;
+  lockAfAeEnabled: boolean;
 }
 
 export interface CaptureRecord {
@@ -101,4 +102,5 @@ export const DEFAULT_SETTINGS: Settings = {
   displayFont: 'clash',
   screensaverEnabled: true,
   screensaverDelaySeconds: 60,
+  lockAfAeEnabled: true,
 };

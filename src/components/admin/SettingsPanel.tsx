@@ -234,6 +234,7 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
             <ToggleRow
               icon={<ImageIcon size={14} />}
               title="Afficher watermark"
+              sub="Incrusté dans la vidéo exportée (canvas)"
               checked={settings.showWatermark}
               onChange={v => updateSettings({ showWatermark: v })}
             />
@@ -265,6 +266,11 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
               </div>
             </div>
             <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            {settings.eventLogo && (
+              <p className="text-white/25 text-[11px] mt-2">
+                Le logo sera incrusté en bas à gauche de la vidéo finale.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -354,6 +360,14 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
             }
             checked={settings.ultraWideEnabled}
             onChange={v => updateSettings({ ultraWideEnabled: v })}
+          />
+
+          <ToggleRow
+            icon={<Lock size={14} />}
+            title="Verrouillage AF/AE"
+            sub="Bloque focus et exposition avant rotation pour éviter le pompage lumineux"
+            checked={settings.lockAfAeEnabled}
+            onChange={v => updateSettings({ lockAfAeEnabled: v })}
           />
 
           <ToggleRow
