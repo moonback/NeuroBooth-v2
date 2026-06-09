@@ -40,26 +40,53 @@ export function CountdownScreen() {
   const circumference = 2 * Math.PI * 90;
 
   return (
-    <div className="theme-bg flex flex-col items-center justify-center min-h-screen w-full gap-10 p-6">
-      {/* Animated background rings - decorative */}
+    <div
+      className="theme-bg flex flex-col items-center justify-center w-full gap-6 p-4"
+      style={{
+        minHeight: '100dvh', // dvh pour mobile (évite la barre d'adresse)
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }}
+    >
+      {/* Anneaux décoratifs — contenus avec overflow-hidden sur le parent */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-        <div className="ring ring-1 opacity-30" />
-        <div className="ring ring-2 opacity-20" />
+        <div
+          className="absolute rounded-full border border-white/10"
+          style={{ width: '70vmin', height: '70vmin' }}
+        />
+        <div
+          className="absolute rounded-full border border-white/5"
+          style={{ width: '90vmin', height: '90vmin' }}
+        />
       </div>
 
+      {/* Header */}
       <div className="relative z-10 text-center animate-bounce-in">
-        <Camera size={32} className="text-white/30 mx-auto mb-4" />
-        <p className="text-white/70 text-2xl font-semibold tracking-wider uppercase">
+        <Camera size={28} className="text-white/30 mx-auto mb-3" />
+        <p className="text-white/70 text-lg font-semibold tracking-wider uppercase leading-tight">
           Préparez-vous...
         </p>
       </div>
 
-      <div className="relative z-10 w-72 h-72">
-        {/* Outer glow circle */}
+      {/* Cercle countdown — taille adaptative avec vmin */}
+      <div
+        className="relative z-10 flex-shrink-0"
+        style={{ width: 'min(72vmin, 288px)', height: 'min(72vmin, 288px)' }}
+      >
+        {/* Lueur de fond */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 animate-pulse" />
-        
-        <svg className="absolute inset-0 -rotate-90" width="288" height="288" viewBox="0 0 256 256">
-          <circle cx="128" cy="128" r="90" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="10" />
+
+        <svg
+          className="absolute inset-0 -rotate-90 w-full h-full"
+          viewBox="0 0 256 256"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            cx="128" cy="128" r="90"
+            fill="none"
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth="10"
+          />
           <circle
             cx="128" cy="128" r="90"
             fill="none"
@@ -71,27 +98,42 @@ export function CountdownScreen() {
             style={{ transition: 'stroke-dashoffset 0.9s ease-out' }}
           />
         </svg>
-        
+
+        {/* Chiffre central — clamp pour s'adapter à toutes tailles */}
         <div className="absolute inset-0 flex items-center justify-center">
           {count === 0 ? (
-            <span className="text-9xl font-black text-white animate-ping-once drop-shadow-lg">GO!</span>
+            <span
+              className="font-black text-white animate-ping-once drop-shadow-lg"
+              style={{ fontSize: 'clamp(3rem, 18vmin, 6rem)' }}
+            >
+              GO!
+            </span>
           ) : (
-            <span className="text-[10rem] font-black text-white countdown-number drop-shadow-xl">
+            <span
+              className="font-black text-white countdown-number drop-shadow-xl"
+              style={{ fontSize: 'clamp(4.5rem, 22vmin, 9rem)' }}
+            >
               {count}
             </span>
           )}
         </div>
       </div>
 
-      <div className="relative z-10 text-center animate-bounce-in">
-        <p className="text-white/40 text-base">
+      {/* Sous-titre */}
+      <div className="relative z-10 text-center px-6 animate-bounce-in">
+        <p className="text-white/40 text-sm leading-snug">
           L'enregistrement commence automatiquement
         </p>
       </div>
 
+      {/* Bouton annuler — zone de tap généreuse */}
       <button
         onClick={() => setScreen('welcome')}
-        className="relative z-10 mt-2 px-8 py-3 rounded-full border border-white/25 bg-white/5 text-white/50 hover:text-white hover:border-white/50 hover:bg-white/10 transition-all duration-300 text-sm font-medium backdrop-blur-sm"
+        className="relative z-10 px-8 rounded-full border border-white/25 bg-white/5 text-white/50 hover:text-white hover:border-white/50 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm font-medium backdrop-blur-sm"
+        style={{
+          minHeight: '44px',   // hauteur de tap recommandée Apple/Google
+          minWidth: '120px',
+        }}
       >
         Annuler
       </button>
