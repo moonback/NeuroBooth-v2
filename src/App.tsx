@@ -7,8 +7,9 @@ import { PreviewScreen } from './components/PreviewScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { PinModal } from './components/PinModal';
 import { ProcessingModal } from './components/ProcessingModal';
+import { Download, X } from 'lucide-react';
 
-function AppInner() {
+function AppInner({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { showInstallPrompt: boolean; onInstall: () => void; onCloseInstallPrompt: () => void }) {
   const { screen, setScreen, settings, adminUnlocked } = useApp();
   const [showPin, setShowPin] = useState(false);
 
@@ -39,15 +40,40 @@ function AppInner() {
         />
       )}
       
+      {/* PWA Install Prompt */}
+      {showInstallPrompt && (
+        <div className="fixed top-4 right-4 z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-bounce-in">
+          <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+            <Download size={20} className="text-purple-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-medium text-sm">Installer NeuroBooth</p>
+            <p className="text-white/60 text-xs">Accès hors ligne et plein écran</p>
+          </div>
+          <button 
+            onClick={onInstall}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium text-sm transition-colors"
+          >
+            Installer
+          </button>
+          <button 
+            onClick={onCloseInstallPrompt}
+            className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <X size={16} className="text-white/60" />
+          </button>
+        </div>
+      )}
+      
       <ProcessingModal />
     </div>
   );
 }
 
-export default function App() {
+export default function App({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { showInstallPrompt: boolean; onInstall: () => void; onCloseInstallPrompt: () => void }) {
   return (
     <AppProvider>
-      <AppInner />
+      <AppInner showInstallPrompt={showInstallPrompt} onInstall={onInstall} onCloseInstallPrompt={onCloseInstallPrompt} />
     </AppProvider>
   );
 }

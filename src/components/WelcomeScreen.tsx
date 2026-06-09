@@ -91,7 +91,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       </div>
 
       {/* Top bar */}
-      <div className="w-full flex justify-between items-center z-10">
+      <div className="w-full flex justify-between items-center z-10 relative">
         <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
           {isOnline
             ? <Wifi size={14} className="text-emerald-400" />
@@ -100,16 +100,21 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
             {isOnline ? 'En ligne' : 'Hors ligne'}
           </span>
         </div>
-        {/* Secret gesture area */}
+        {/* Secret gesture area - centered top */}
         <button
           onClick={handleSecretTap}
-          className="p-3 rounded-full relative overflow-visible"
+          className="absolute left-1/2 -translate-x-1/2 px-6 py-2 rounded-full relative overflow-visible border border-transparent hover:border-white/10 transition-all"
           aria-label="Secret gesture zone"
         >
           {/* Tap count indicator */}
           {tapCount > 0 && (
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm border border-white/20">
-              {tapCount}/{REQUIRED_TAPS}
+            <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm font-semibold backdrop-blur-sm border border-white/20 flex items-center gap-2">
+              {[...Array(REQUIRED_TAPS)].map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-2 h-2 rounded-full ${i < tapCount ? 'bg-purple-400' : 'bg-white/30'}`} 
+                />
+              ))}
             </div>
           )}
           
@@ -117,14 +122,15 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
           {visualTaps.map(tap => (
             <div
               key={tap.id}
-              className="absolute w-10 h-10 rounded-full bg-white/40 pointer-events-none animate-ping"
+              className="absolute w-12 h-12 rounded-full bg-white/40 pointer-events-none animate-ping"
               style={{
-                left: tap.x - 20,
-                top: tap.y - 20,
+                left: tap.x - 24,
+                top: tap.y - 24,
               }}
             />
           ))}
         </button>
+        <div className="w-24"></div> {/* Spacer to keep balance */}
       </div>
 
       {/* Center content */}
