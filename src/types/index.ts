@@ -42,6 +42,7 @@ export interface Settings {
   screensaverEnabled: boolean;
   screensaverDelaySeconds: number;
   lockAfAeEnabled: boolean;
+  micVolume: number; // 0-100
 }
 
 export interface CaptureRecord {
@@ -103,4 +104,5 @@ export const DEFAULT_SETTINGS: Settings = {
   screensaverEnabled: true,
   screensaverDelaySeconds: 60,
   lockAfAeEnabled: true,
+  micVolume: 100,
 };

@@ -58,5 +58,7 @@ export interface SettingsRow {
   display_font: string;
   screensaver_enabled: boolean;
   screensaver_delay_seconds: number;
+  lock_af_ae_enabled: boolean;
+  mic_volume: number;
   updated_at: string;
 }

@@ -343,6 +343,8 @@ function rowToSettings(row: SettingsRow): Settings {
     displayFont: (row.display_font as Settings['displayFont']) ?? 'clash',
     screensaverEnabled: row.screensaver_enabled ?? true,
     screensaverDelaySeconds: row.screensaver_delay_seconds ?? 60,
+    lockAfAeEnabled: row.lock_af_ae_enabled ?? true,
+    micVolume: row.mic_volume ?? 100,
   };
 }
 
@@ -377,6 +379,8 @@ function settingsToRow(settings: Settings): Omit<SettingsRow, 'updated_at'> {
     display_font: settings.displayFont,
     screensaver_enabled: settings.screensaverEnabled,
     screensaver_delay_seconds: settings.screensaverDelaySeconds,
+    lock_af_ae_enabled: settings.lockAfAeEnabled,
+    mic_volume: settings.micVolume,
   };
 }
 
@@ -407,7 +411,7 @@ export async function saveSettingsToCloud(settings: Settings): Promise<boolean> 
     const payload = settingsToRow(settings);
     const { error } = await supabase
       .from('settings')
-      .upsert(payload);
+      .upsert(payload, { onConflict: 'id' });
     
     if (error) {
       logger.error('saveSettingsToCloud: Error from Supabase', { error });

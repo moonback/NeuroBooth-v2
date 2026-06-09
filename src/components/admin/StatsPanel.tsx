@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { fetchCloudStats } from '../../lib/storage';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import {
   Camera, Share2, Clock, TrendingUp, Activity, Calendar,
-  Cloud, CloudOff, Upload, RefreshCw, Loader,
+  Cloud, CloudOff, Upload, RefreshCw, Loader, BarChart2,
 } from 'lucide-react';
+import { AdminCard, AdminStatCard, AdminBadge, SectionHeader } from './ui';
 
 interface CloudStats { total: number; shared: number; today: number }
 
@@ -36,163 +37,109 @@ export function StatsPanel() {
     return { hour: ((h + 24) % 24), count };
   });
   const maxHourly = Math.max(...hourlyData.map(d => d.count), 1);
+  const shareRate = stats.totalCaptures > 0 ? Math.round((stats.totalShared / stats.totalCaptures) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Local stats grid */}
-      <div>
-        <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Statistiques locales</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <StatCard icon={<Camera size={18} />} label="Total" value={stats.totalCaptures} color="blue" />
-          <StatCard icon={<Share2 size={18} />} label="Partagés" value={stats.totalShared} color="emerald" />
-          <StatCard icon={<Activity size={18} />} label="Cette heure" value={stats.capturesThisHour} color="yellow" />
-          <StatCard icon={<Calendar size={18} />} label="Aujourd'hui" value={stats.capturesToday} color="purple" />
-          <StatCard icon={<Clock size={18} />} label="Durée moy." value={`${stats.averageDuration}s`} color="orange" />
-          <StatCard
-            icon={<TrendingUp size={18} />}
-            label="Taux partage"
-            value={stats.totalCaptures > 0 ? `${Math.round((stats.totalShared / stats.totalCaptures) * 100)}%` : '—'}
-            color="pink"
-          />
+    <div className="space-y-5">
+      <AdminCard glow="radial-gradient(ellipse at top left, rgba(59,130,246,0.05), transparent 60%)">
+        <SectionHeader icon={<BarChart2 size={15} className="text-blue-400/70" />} title="Statistiques locales" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <AdminStatCard icon={<Camera size={16} />} label="Total" value={stats.totalCaptures} accent="blue" />
+          <AdminStatCard icon={<Share2 size={16} />} label="Partagés" value={stats.totalShared} accent="emerald" />
+          <AdminStatCard icon={<Activity size={16} />} label="Cette heure" value={stats.capturesThisHour} accent="yellow" />
+          <AdminStatCard icon={<Calendar size={16} />} label="Aujourd'hui" value={stats.capturesToday} accent="purple" />
+          <AdminStatCard icon={<Clock size={16} />} label="Durée moy." value={`${stats.averageDuration}s`} accent="orange" />
+          <AdminStatCard icon={<TrendingUp size={16} />} label="Taux partage" value={stats.totalCaptures > 0 ? `${shareRate}%` : '—'} accent="pink" />
         </div>
-      </div>
+      </AdminCard>
 
-      {/* Cloud stats */}
       {isSupabaseConfigured && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white/40 text-xs uppercase tracking-widest">Statistiques cloud</h3>
-            <button
-              onClick={loadCloudStats}
-              disabled={loadingCloud || !isOnline}
-              className="flex items-center gap-1.5 text-white/30 hover:text-white/60 text-xs transition-colors disabled:opacity-30"
-            >
-              {loadingCloud ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-              Rafraîchir
-            </button>
-          </div>
-
+        <AdminCard>
+          <SectionHeader
+            icon={<Cloud size={15} className="text-sky-400/70" />}
+            title="Statistiques cloud"
+            action={
+              <button onClick={loadCloudStats} disabled={loadingCloud || !isOnline} className="flex items-center gap-1 text-white/30 hover:text-white/60 text-xs disabled:opacity-30">
+                {loadingCloud ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />} Rafraîchir
+              </button>
+            }
+          />
           {!isOnline ? (
-            <div className="flex items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 text-white/30 text-sm">
+            <div className="flex items-center gap-2 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] text-white/30 text-sm">
               <CloudOff size={16} /> Hors ligne — statistiques cloud indisponibles
             </div>
           ) : cloudStats ? (
             <div className="grid grid-cols-3 gap-3">
-              <CloudStatCard label="Total cloud" value={cloudStats.total} icon={<Cloud size={16} />} />
-              <CloudStatCard label="Partagés" value={cloudStats.shared} icon={<Share2 size={16} />} />
-              <CloudStatCard label="Aujourd'hui" value={cloudStats.today} icon={<Calendar size={16} />} />
+              <AdminStatCard icon={<Cloud size={16} />} label="Total cloud" value={cloudStats.total} accent="sky" />
+              <AdminStatCard icon={<Share2 size={16} />} label="Partagés" value={cloudStats.shared} accent="emerald" />
+              <AdminStatCard icon={<Calendar size={16} />} label="Aujourd'hui" value={cloudStats.today} accent="purple" />
             </div>
           ) : (
-            <div className="flex items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10">
+            <div className="flex items-center justify-center p-8">
               <Loader size={20} className="text-white/20 animate-spin" />
             </div>
           )}
-        </div>
+        </AdminCard>
       )}
 
-      {/* Upload status */}
-      <div>
-        <h3 className="text-white/40 text-xs uppercase tracking-widest mb-3">Statut uploads</h3>
+      <AdminCard>
+        <SectionHeader icon={<Upload size={15} className="text-yellow-400/70" />} title="Statut uploads" />
         <div className="grid grid-cols-3 gap-3">
-          <div className="flex flex-col gap-1 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-            <div className="flex items-center gap-1.5 text-emerald-400 text-xs mb-1"><Cloud size={14} /> Uploadés</div>
-            <p className="text-2xl font-black text-white">{stats.cloudCaptures}</p>
-          </div>
-          <div className="flex flex-col gap-1 p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20">
-            <div className="flex items-center gap-1.5 text-yellow-400 text-xs mb-1">
-              {uploadingCount > 0 ? <Loader size={14} className="animate-spin" /> : <Upload size={14} />}
-              En attente
-            </div>
-            <p className="text-2xl font-black text-white">{stats.pendingUploads}</p>
-          </div>
-          <div className="flex flex-col gap-1 p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-            <div className="flex items-center gap-1.5 text-red-400 text-xs mb-1"><Activity size={14} /> Erreurs</div>
-            <p className="text-2xl font-black text-white">{errorCount}</p>
-          </div>
+          <AdminStatCard icon={<Cloud size={16} />} label="Uploadés" value={stats.cloudCaptures} accent="emerald" />
+          <AdminStatCard
+            icon={uploadingCount > 0 ? <Loader size={16} className="animate-spin" /> : <Upload size={16} />}
+            label="En attente"
+            value={stats.pendingUploads}
+            accent="yellow"
+          />
+          <AdminStatCard icon={<Activity size={16} />} label="Erreurs" value={errorCount} accent="pink" />
         </div>
-      </div>
+      </AdminCard>
 
-      {/* Hourly chart */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <h3 className="text-white/70 text-sm font-medium mb-5">Activité par heure (12 dernières heures)</h3>
+      <AdminCard>
+        <SectionHeader icon={<Activity size={15} className="text-indigo-400/70" />} title="Activité par heure" />
+        <p className="text-white/30 text-xs mb-4">12 dernières heures</p>
         <div className="flex items-end gap-1.5 h-28">
           {hourlyData.map((d, i) => (
             <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
               <div className="w-full flex items-end justify-center" style={{ height: '88px' }}>
                 <div
                   className="w-full rounded-t theme-accent-bg transition-all duration-500"
-                  style={{
-                    height: `${(d.count / maxHourly) * 100}%`,
-                    minHeight: d.count > 0 ? '4px' : '0',
-                    opacity: d.count > 0 ? 1 : 0.12,
-                  }}
+                  style={{ height: `${(d.count / maxHourly) * 100}%`, minHeight: d.count > 0 ? '4px' : '0', opacity: d.count > 0 ? 1 : 0.12 }}
                 />
               </div>
-              <span className="text-white/25 text-xs">{d.hour}h</span>
+              <span className="text-white/25 text-[10px]">{d.hour}h</span>
             </div>
           ))}
         </div>
-      </div>
+      </AdminCard>
 
-      {/* Recent list */}
       {captures.length > 0 && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="text-white/70 text-sm font-medium mb-4">Captures récentes</h3>
+        <AdminCard>
+          <SectionHeader icon={<Camera size={15} className="text-white/40" />} title="Captures récentes" />
           <div className="space-y-1 max-h-52 overflow-y-auto">
             {captures.slice(0, 12).map(c => {
               const upSt = uploadStates[c.id];
               return (
-                <div key={c.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                  <div>
-                    <p className="text-white text-sm truncate max-w-[160px]">{c.eventName}</p>
+                <div key={c.id} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-white text-sm truncate">{c.eventName}</p>
                     <p className="text-white/35 text-xs">
                       {new Date(c.createdAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-white/40 text-xs">{c.duration}s</span>
-                    {upSt?.status === 'uploading' && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs flex items-center gap-1">
-                        <Loader size={9} className="animate-spin" />{upSt.progress}%
-                      </span>
-                    )}
-                    {c.shared && <span className="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-xs">partage</span>}
-                    {c.uploadedToCloud
-                      ? <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-xs">cloud</span>
-                      : <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-xs">local</span>}
+                    {upSt?.status === 'uploading' && <AdminBadge tone="accent"><Loader size={9} className="animate-spin" /> {upSt.progress}%</AdminBadge>}
+                    {c.shared && <AdminBadge tone="purple">partage</AdminBadge>}
+                    {c.uploadedToCloud ? <AdminBadge tone="success">cloud</AdminBadge> : <AdminBadge tone="neutral">local</AdminBadge>}
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </AdminCard>
       )}
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
-  const colorMap: Record<string, string> = {
-    blue:   'bg-blue-500/10 border-blue-500/20 text-blue-400',
-    emerald:'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-    yellow: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
-    purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-    orange: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
-    pink:   'bg-pink-500/10 border-pink-500/20 text-pink-400',
-  };
-  return (
-    <div className={`rounded-2xl border p-4 ${colorMap[color]}`}>
-      <div className="flex items-center gap-1.5 mb-2 opacity-70">{icon}<span className="text-xs uppercase tracking-wide">{label}</span></div>
-      <p className="text-2xl font-black text-white">{value}</p>
-    </div>
-  );
-}
-
-function CloudStatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4">
-      <div className="flex items-center gap-1.5 mb-2 text-sky-400 opacity-70">{icon}<span className="text-xs uppercase tracking-wide">{label}</span></div>
-      <p className="text-2xl font-black text-white">{value}</p>
     </div>
   );
 }
