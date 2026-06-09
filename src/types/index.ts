@@ -76,7 +76,7 @@ export const DEFAULT_SETTINGS: Settings = {
   motorSpeed: 50,
   motorDirection: 'cw',
   motorSyncRecording: true,
-  cameraFacing: 'user',
+  cameraFacing: 'environment',
   showWatermark: false,
   watermarkText: '',
   slowMotionEnabled: true,

@@ -32,6 +32,7 @@ import {
 } from '../lib/storage';
 import { applySlowMotion } from '../lib/videoProcessor';
 import { logger } from '../lib/logger';
+import { getPreferredCameraStream } from '../lib/camera';
 import { useSupabaseSync } from '../hooks/useSupabaseSync';
 
 export type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
@@ -160,6 +161,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentCameraFacing, setCurrentCameraFacing] = useState<CameraFacing>(settings.cameraFacing);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
+  useEffect(() => {
+    setCurrentCameraFacing(settings.cameraFacing);
+  }, [settings.cameraFacing]);
+
   // ─── Camera Functions ───────────────────────────────────────────────────────
   const attachStreamToVideo = useCallback((videoElement: HTMLVideoElement | null) => {
     currentVideoElementRef.current = videoElement;
@@ -176,8 +181,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       const constraints = QUALITY_CONSTRAINTS[settings.videoQuality];
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { ...constraints, facingMode },
+      const mediaStream = await getPreferredCameraStream({
+        videoConstraints: constraints,
+        facingMode,
         audio: settings.soundEnabled,
       });
       logger.info('Camera stream started', {

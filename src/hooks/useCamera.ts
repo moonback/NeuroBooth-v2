@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
 import { CameraFacing, VideoQuality, QUALITY_CONSTRAINTS } from '../types';
 import { logger } from '../lib/logger';
+import { getPreferredCameraStream } from '../lib/camera';
 
 interface UseCameraOptions {
   facing: CameraFacing;
@@ -31,6 +32,10 @@ export function useCamera({ facing, quality, soundEnabled }: UseCameraOptions): 
   const [currentFacing, setCurrentFacing] = useState<CameraFacing>(facing);
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
 
+  useEffect(() => {
+    setCurrentFacing(facing);
+  }, [facing]);
+
   const startStream = useCallback(async (facingMode: CameraFacing) => {
     try {
       logger.info('Starting camera stream', { facingMode, quality, soundEnabled });
@@ -39,8 +44,9 @@ export function useCamera({ facing, quality, soundEnabled }: UseCameraOptions): 
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       const constraints = QUALITY_CONSTRAINTS[quality];
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { ...constraints, facingMode },
+      const mediaStream = await getPreferredCameraStream({
+        videoConstraints: constraints,
+        facingMode,
         audio: soundEnabled,
       });
       logger.info('Camera stream started', {

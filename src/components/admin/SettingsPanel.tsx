@@ -329,7 +329,7 @@ export function SettingsPanel({ settings, updateSettings, resetSettings }: Setti
                         : 'border-white/[0.05] text-white/40 hover:border-white/15 hover:text-white/60 bg-white/[0.025]',
                     ].join(' ')}
                   >
-                    {f === 'environment' ? '📷 Arrière' : '🤳 Avant (selfie)'}
+                    {f === 'environment' ? '📷 Arrière ultra-large' : '🤳 Avant (selfie)'}
                   </button>
                 );
               })}
