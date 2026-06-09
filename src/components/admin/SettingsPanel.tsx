@@ -11,6 +11,7 @@ import { Toggle, AdminInput, AdminButton } from './ui';
 interface SettingsPanelProps {
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => void;
+  resetSettings: () => void;
 }
  
 /* ── Design tokens ────────────────────────────────────────────── */
@@ -176,9 +177,9 @@ function ToggleRow({
 }
  
 /* ── Main component ───────────────────────────────────────────── */
-export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) {
+export function SettingsPanel({ settings, updateSettings, resetSettings }: SettingsPanelProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
- 
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -186,10 +187,10 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
     reader.onload = ev => updateSettings({ eventLogo: ev.target?.result as string });
     reader.readAsDataURL(file);
   };
- 
+
   return (
     <div className="space-y-3 w-full overflow-x-hidden">
- 
+
       {/* ── Événement ── */}
       <section className={TOKEN.section}>
         <div
@@ -200,7 +201,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           icon={<Calendar size={15} className="text-amber-400/70" />}
           title="Événement"
         />
- 
+
         <div className="space-y-4">
           <div>
             <p className={TOKEN.label}>Nom de l'événement</p>
@@ -211,7 +212,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
               placeholder="Mon Événement"
             />
           </div>
- 
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <p className={TOKEN.label}>Watermark texte</p>
@@ -229,7 +230,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
               onChange={v => updateSettings({ showWatermark: v })}
             />
           </div>
- 
+
           <div>
             <p className={TOKEN.label}>Logo</p>
             <div className="flex items-center gap-4 bg-white/[0.025] rounded-xl p-4 border border-white/[0.05]">
@@ -259,7 +260,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           </div>
         </div>
       </section>
- 
+
       {/* ── Capture ── */}
       <section className={TOKEN.section}>
         <div
@@ -270,7 +271,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           icon={<Camera size={15} className="text-indigo-400/70" />}
           title="Capture"
         />
- 
+
         <div className="space-y-3">
           <SliderRow
             label="Durée d'enregistrement"
@@ -279,7 +280,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
             min={3} max={60}
             onChange={v => updateSettings({ captureDuration: v })}
           />
- 
+
           <SliderRow
             label="Compte à rebours"
             value={settings.countdownDuration}
@@ -287,7 +288,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
             min={1} max={10}
             onChange={v => updateSettings({ countdownDuration: v })}
           />
- 
+
           <div>
             <p className={TOKEN.label}>Qualité vidéo</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -311,7 +312,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
               })}
             </div>
           </div>
- 
+
           <div>
             <p className={TOKEN.label}>Caméra par défaut</p>
             <div className="grid grid-cols-2 gap-2">
@@ -334,16 +335,16 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
               })}
             </div>
           </div>
- 
+
           <ToggleRow
             icon={<Volume2 size={14} />}
             title="Son actif"
             checked={settings.soundEnabled}
             onChange={v => updateSettings({ soundEnabled: v })}
           />
- 
+
           <div className={TOKEN.divider} />
- 
+
           <ToggleRow
             icon={<FastForward size={14} />}
             title="Ralenti automatique"
@@ -351,7 +352,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
             checked={settings.slowMotionEnabled}
             onChange={v => updateSettings({ slowMotionEnabled: v })}
           />
- 
+
           {settings.slowMotionEnabled && (
             <div className="space-y-2 pl-2 border-l border-white/[0.06]">
               <SliderRow
@@ -379,7 +380,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           )}
         </div>
       </section>
- 
+
       {/* ── Thème visuel ── */}
       <section className={TOKEN.section}>
         <div
@@ -390,7 +391,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           icon={<Palette size={15} className="text-purple-400/70" />}
           title="Thème visuel"
         />
- 
+
         <div className="grid grid-cols-2 gap-2">
           {THEMES.map(t => {
             const active = settings.theme === t.value;
@@ -412,7 +413,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
                     style={{ background: `radial-gradient(ellipse at top left, ${t.glow}, transparent 70%)` }}
                   />
                 )}
- 
+
                 <div className="relative flex items-center justify-between">
                   <div
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
@@ -435,11 +436,11 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
                     {active && <Check size={10} className="text-white" />}
                   </div>
                 </div>
- 
+
                 <p className={`relative text-[11px] leading-snug ${active ? 'text-white/50' : 'text-white/25'}`}>
                   {t.description}
                 </p>
- 
+
                 <div className="relative w-full h-1 rounded-full overflow-hidden flex gap-px">
                   {[1, 0.55, 0.25].map((o, i) => (
                     <div
@@ -454,7 +455,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           })}
         </div>
       </section>
- 
+
       {/* ── Mode kiosque ── */}
       <section className={TOKEN.section}>
         <div
@@ -465,7 +466,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           icon={<Shield size={15} className="text-red-400/60" />}
           title="Mode kiosque"
         />
- 
+
         <div className="space-y-3">
           <ToggleRow
             icon={<Lock size={14} />}
@@ -474,7 +475,7 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
             checked={settings.kioskMode}
             onChange={v => updateSettings({ kioskMode: v })}
           />
- 
+
           {settings.kioskMode && (
             <div className="pl-2 border-l border-white/[0.06]">
               <p className={TOKEN.label}>PIN admin (4 chiffres)</p>
@@ -490,7 +491,28 @@ export function SettingsPanel({ settings, updateSettings }: SettingsPanelProps) 
           )}
         </div>
       </section>
- 
+
+      {/* ── Réinitialiser ── */}
+      <section className={TOKEN.section}>
+        <div
+          className={TOKEN.sectionGlow}
+          style={{ background: 'radial-gradient(ellipse at bottom, rgba(239,68,68,0.04), transparent 60%)' }}
+        />
+        <SectionHeader
+          icon={<RotateCcw size={15} className="text-red-400/60" />}
+          title="Réinitialisation"
+        />
+        <div className="space-y-3">
+          <p className="text-white/30 text-[11px]">
+            Restaurer tous les paramètres par défaut. Cette action est irréversible.
+          </p>
+          <AdminButton variant="danger" onClick={resetSettings}>
+            <RotateCcw size={14} />
+            Réinitialiser les paramètres
+          </AdminButton>
+        </div>
+      </section>
+
     </div>
   );
 }

@@ -47,6 +47,7 @@ interface AppContextValue {
   setScreen: (s: AppScreen) => void;
   settings: Settings;
   updateSettings: (patch: Partial<Settings>) => void;
+  resetSettings: () => void;
   captures: CaptureRecord[];
   currentCapture: CaptureRecord | null;
   startNewCapture: () => void;
@@ -140,6 +141,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // ── Settings ──────────────────────────────────────────────────────────────
   const updateSettings = useCallback((patch: Partial<Settings>) => {
     setSettings(prev => ({ ...prev, ...patch }));
+  }, []);
+
+  const resetSettings = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS);
+    setCurrentCameraFacing(DEFAULT_SETTINGS.cameraFacing);
   }, []);
 
   // ─── Camera State ───────────────────────────────────────────────────────
@@ -473,7 +479,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       screen, setScreen,
-      settings, updateSettings,
+      settings, updateSettings, resetSettings,
       captures, currentCapture,
       startNewCapture, finishCapture,
       markShared,
