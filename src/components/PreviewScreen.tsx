@@ -42,7 +42,7 @@ export function PreviewScreen() {
       setVideoUrl(url);
       return () => URL.revokeObjectURL(url);
     }
-  }, [currentCapture?.id, currentCapture?.videoUrl]);
+  }, [currentCapture]);
 
   // ── QR Code — regenerate whenever the cloud URL becomes available ──────────
   useEffect(() => {
@@ -56,17 +56,18 @@ export function PreviewScreen() {
     }
     logger.info('Preview: generating QR code for share URL');
     QRCode.toDataURL(shareUrl, {
-      width: 280,
+      width: 220,
       margin: 2,
-      color: { dark: '#ffffff', light: '#00000000' },
+      color: { dark: '#000000', light: '#ffffff' },
       errorCorrectionLevel: 'M',
     }).then((url) => {
       logger.info('Preview: QR code generated');
       setQrDataUrl(url);
     }).catch((error) => {
       logger.error('Preview: QR code generation failed', { error: (error as Error).message });
+      setQrDataUrl(null);
     });
-  }, [currentCapture?.videoUrl]);
+  }, [currentCapture]);
 
   const togglePlay = useCallback(() => {
     if (!videoRef.current) {
@@ -76,13 +77,31 @@ export function PreviewScreen() {
     if (videoRef.current.paused) { 
       logger.info('Preview: playing video');
       videoRef.current.play(); 
-      setIsPlaying(true); 
     }
     else { 
       logger.info('Preview: pausing video');
       videoRef.current.pause(); 
-      setIsPlaying(false); 
     }
+  }, []);
+
+  // ── Sync playback state with video element events ────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+    };
   }, []);
 
   const handleDownload = useCallback(() => {
@@ -131,223 +150,206 @@ export function PreviewScreen() {
   const isUploaded = !!currentCapture.videoUrl;
 
   return (
-    <div className="theme-bg flex flex-col lg:flex-row min-h-screen w-full overflow-hidden">
-      {/* ── Left: Video ── */}
-      <div className="relative flex-1 bg-black flex items-center justify-center min-h-[45vh] lg:min-h-screen">
-        {videoUrl ? (
-          <>
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              className="w-full h-full object-contain max-h-screen"
-              loop
-              playsInline
-              onEnded={() => setIsPlaying(false)}
-            />
-            <button
-              onClick={togglePlay}
-              className="absolute inset-0 flex items-center justify-center group"
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              <div className={`
-                w-24 h-24 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center
-                transition-all duration-200 group-hover:bg-black/80 group-hover:scale-110
-                ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}
-              `}>
-                {isPlaying ? <Pause size={40} className="text-white" /> : <Play size={40} className="text-white ml-1" />}
-              </div>
-            </button>
-          </>
-        ) : (
+    <div className="relative w-full h-screen overflow-hidden bg-black">
+      {/* ── Fullscreen Video ── */}
+      {videoUrl ? (
+        <>
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            className="absolute inset-0 w-full h-full object-cover"
+            loop
+            playsInline
+          />
+          <button
+            onClick={togglePlay}
+            className="absolute inset-0 flex items-center justify-center group"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            <div className={`
+              w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center
+              transition-all duration-200 group-hover:bg-black/80 group-hover:scale-110
+              ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}
+            `}>
+              {isPlaying ? <Pause size={32} className="text-white" /> : <Play size={32} className="text-white ml-1" />}
+            </div>
+          </button>
+        </>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-white/40 flex flex-col items-center gap-4">
-            <Loader size={40} className="animate-spin" />
+            <Loader size={32} className="animate-spin" />
             <span className="text-sm">Chargement...</span>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Upload progress overlay */}
-        {isUploading && (
-          <div className="absolute bottom-0 left-0 right-0">
-            <div className="h-2 bg-white/10">
-              <div
-                className="h-full theme-accent-bg transition-all duration-300"
-                style={{ width: `${uploadState?.progress ?? 0}%` }}
-              />
+      {/* Upload progress overlay */}
+      {isUploading && (
+        <div className="absolute bottom-0 left-0 right-0 z-10">
+          <div className="h-2 bg-white/10">
+            <div
+              className="h-full theme-accent-bg transition-all duration-300"
+              style={{ width: `${uploadState?.progress ?? 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Cloud badge */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+        {isUploaded ? (
+          <span className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-emerald-500/30">
+            <Cloud size={12} className="sm:w-3.5 sm:h-3.5" /> 
+            <span className="hidden sm:inline">Sauvegardé</span>
+          </span>
+        ) : isUploading ? (
+          <span className="flex items-center gap-2 bg-blue-500/20 text-blue-400 text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-blue-500/30">
+            <Loader size={12} className="sm:w-3.5 sm:h-3.5 animate-spin" /> 
+            <span>{uploadState?.progress ?? 0}%</span>
+          </span>
+        ) : isUploadError ? (
+          <span className="flex items-center gap-2 bg-red-500/20 text-red-400 text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md border border-red-500/30">
+            <AlertCircle size={12} className="sm:w-3.5 sm:h-3.5" /> 
+            <span className="hidden sm:inline">Erreur</span>
+          </span>
+        ) : (
+          <span className="flex items-center gap-2 bg-white/10 text-white/40 text-xs px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-md">
+            <CloudOff size={12} className="sm:w-3.5 sm:h-3.5" /> 
+            <span className="hidden sm:inline">Local</span>
+          </span>
+        )}
+      </div>
+
+      {/* ── QR Code Overlay (Responsive) */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-16 sm:top-20 sm:right-6 sm:left-auto sm:top-1/2 sm:-translate-y-1/2 z-20 animate-bounce-in">
+        {isUploaded && qrDataUrl ? (
+          <div className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-white/15 shadow-2xl">
+            <div className="p-3 sm:p-4 bg-white/10 rounded-xl sm:rounded-2xl">
+              <img src={qrDataUrl} alt="QR Code" className="w-28 h-28 sm:w-44 sm:h-44 rounded-lg sm:rounded-xl" />
+            </div>
+            <div className="text-center">
+              <p className="text-white/80 text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2">
+                <Smartphone size={12} className="sm:w-3.5 sm:h-3.5" />
+                <span>Scannez</span>
+              </p>
+            </div>
+          </div>
+        ) : isUploading ? (
+          <div className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-white/15 shadow-2xl">
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16">
+              <svg className="-rotate-90" width={48} height={48} viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="5" />
+                <circle
+                  cx="32" cy="32" r="26"
+                  fill="none" strokeWidth="5" strokeLinecap="round"
+                  className="theme-accent-stroke"
+                  strokeDasharray={2 * Math.PI * 26}
+                  strokeDashoffset={2 * Math.PI * 26 * (1 - (uploadState?.progress ?? 0) / 100)}
+                  style={{ transition: 'stroke-dashoffset 0.3s linear' }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                {uploadState?.progress ?? 0}%
+              </span>
+            </div>
+            <div>
+              <p className="text-white/70 text-[10px] sm:text-xs font-medium">Upload en cours...</p>
+            </div>
+          </div>
+        ) : isUploadError ? (
+          <div className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-red-900/50 backdrop-blur-xl border border-red-500/30 shadow-2xl">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center">
+              <AlertCircle size={20} className="sm:w-6 sm:h-6 text-red-400" />
+            </div>
+            <div>
+              <p className="text-red-400 text-[10px] sm:text-xs font-medium">Upload échoué</p>
+            </div>
+            {isOnline && (
+              <button
+                onClick={() => retryUpload(currentCapture.id)}
+                className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-[10px] sm:text-xs font-medium"
+              >
+                <RotateCcw size={10} className="sm:w-3 sm:h-3" /> Réessayer
+              </button>
+            )}
+          </div>
+        ) : !isOnline ? (
+          <div className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-white/15 shadow-2xl">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+              <CloudOff size={20} className="sm:w-6 sm:h-6 text-white/40" />
+            </div>
+            <div>
+              <p className="text-white/50 text-[10px] sm:text-xs font-medium">Hors ligne</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-white/15 shadow-2xl">
+            <Loader size={24} className="sm:w-7 sm:h-7 text-white/40 animate-spin" />
+            <div>
+              <p className="text-white/60 text-[10px] sm:text-xs font-medium">Préparation...</p>
             </div>
           </div>
         )}
-
-        {/* Cloud badge */}
-        <div className="absolute top-4 right-4">
-          {isUploaded ? (
-            <span className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 text-xs px-4 py-2 rounded-full backdrop-blur-md border border-emerald-500/30">
-              <Cloud size={14} /> Sauvegardé
-            </span>
-          ) : isUploading ? (
-            <span className="flex items-center gap-2 bg-blue-500/20 text-blue-400 text-xs px-4 py-2 rounded-full backdrop-blur-md border border-blue-500/30">
-              <Loader size={14} className="animate-spin" /> {uploadState?.progress ?? 0}%
-            </span>
-          ) : isUploadError ? (
-            <span className="flex items-center gap-2 bg-red-500/20 text-red-400 text-xs px-4 py-2 rounded-full backdrop-blur-md border border-red-500/30">
-              <AlertCircle size={14} /> Erreur
-            </span>
-          ) : (
-            <span className="flex items-center gap-2 bg-white/10 text-white/40 text-xs px-4 py-2 rounded-full backdrop-blur-md">
-              <CloudOff size={14} /> Local
-            </span>
-          )}
-        </div>
       </div>
 
-      {/* ── Right: QR + Actions ── */}
-      <div className="w-full lg:w-96 flex flex-col items-center justify-start lg:justify-center gap-6 p-6 lg:p-8 relative overflow-y-auto">
-        <div className="text-center animate-bounce-in">
-          <h2 className="text-3xl font-bold text-white mb-1 flex items-center justify-center gap-2">
-            <Camera size={24} className="theme-accent-text" />
-            Votre vidéo
-          </h2>
-          <p className="text-white/50 text-sm">
-            {Math.round(currentCapture.duration)}s &bull;{' '}
-            {new Date(currentCapture.createdAt).toLocaleTimeString('fr-FR')}
-          </p>
-        </div>
+      {/* ── Action Buttons Overlay (Bottom, Responsive) */}
+      <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 w-full px-4 sm:px-0">
+        <div className="flex flex-col items-center gap-2 sm:gap-3 animate-bounce-in">
+          {/* Title */}
+          <div className="text-center mb-1 sm:mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center justify-center gap-1.5 sm:gap-2">
+              <Camera size={16} className="sm:w-5 sm:h-5 theme-accent-text" />
+              Votre vidéo
+            </h2>
+            <p className="text-white/60 text-[10px] sm:text-xs">
+              {Math.round(currentCapture.duration)}s &bull;{' '}
+              {new Date(currentCapture.createdAt).toLocaleTimeString('fr-FR')}
+            </p>
+          </div>
 
-        {/* QR Code section */}
-        <div className="w-full animate-bounce-in">
-          {isUploaded && qrDataUrl ? (
-            <div className="flex flex-col items-center gap-4">
-              <div className="p-5 rounded-3xl bg-gradient-to-b from-white/10 to-white/5 border border-white/15 shadow-2xl relative">
-                <div className="absolute inset-0 rounded-3xl theme-accent-border border opacity-10" />
-                <img src={qrDataUrl} alt="QR Code" className="w-56 h-56 rounded-2xl" />
-              </div>
-              <div className="text-center">
-                <p className="text-white/60 text-sm mb-1 flex items-center justify-center gap-2">
-                  <Smartphone size={16} className="text-white/40" />
-                  Scannez pour récupérer votre vidéo
-                </p>
-              </div>
-            </div>
-          ) : isUploading ? (
-            <UploadingPlaceholder progress={uploadState?.progress ?? 0} />
-          ) : isUploadError ? (
-            <ErrorPlaceholder onRetry={() => retryUpload(currentCapture.id)} isOnline={isOnline} />
-          ) : !isOnline ? (
-            <OfflinePlaceholder />
-          ) : (
-            <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-gradient-to-b from-white/10 to-white/5 border border-white/10 text-center">
-              <Loader size={32} className="text-white/30 animate-spin" />
-              <div>
-                <p className="text-white/60 text-sm font-medium">Préparation de l'upload...</p>
-                <p className="text-white/30 text-xs mt-1">Votre vidéo est en route</p>
-              </div>
-            </div>
-          )}
-        </div>
+          {/* Buttons */}
+          <div className="flex flex-col w-full sm:flex-row gap-2 sm:gap-3">
+            <button
+              onClick={handleShare}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-white transition-all shadow-lg backdrop-blur-xl ${
+                shared ? 'bg-emerald-600/80 border border-emerald-500/50'
+                       : 'theme-accent-bg hover:opacity-90 active:scale-[0.98]'
+              }`}
+            >
+              {shared ? <CheckCircle size={16} className="sm:w-4.5 sm:h-4.5" /> : <Share2 size={16} className="sm:w-4.5 sm:h-4.5" />}
+              <span className="text-sm sm:text-base">{shared ? 'Partagé !' : 'Partager'}</span>
+            </button>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 w-full animate-bounce-in">
-          <button
-            onClick={handleShare}
-            className={`flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-semibold text-white transition-all shadow-lg ${
-              shared ? 'bg-emerald-600/80 border border-emerald-500/50'
-                     : 'theme-accent-bg hover:opacity-90 hover:scale-[1.01] active:scale-[0.98]'
-            }`}
-          >
-            {shared ? <CheckCircle size={20} /> : <Share2 size={20} />}
-            {shared ? 'Partagé !' : 'Partager'}
-          </button>
-
-          <button
-            onClick={handleDownload}
-            disabled={!currentCapture.videoBlob}
-            className={`flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-semibold transition-all border ${
-              downloadDone
-                ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10'
-                : 'border-white/20 text-white hover:bg-white/10 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-30'
-            }`}
-          >
-            {downloadDone ? <CheckCircle size={20} /> : <Download size={20} />}
-            {downloadDone ? 'Téléchargé !' : 'Télécharger'}
-          </button>
+            <button
+              onClick={handleDownload}
+              disabled={!currentCapture.videoBlob}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold transition-all border backdrop-blur-xl ${
+                downloadDone
+                  ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/20'
+                  : 'border-white/30 text-white hover:bg-white/20 active:scale-[0.98] disabled:opacity-30'
+              }`}
+            >
+              {downloadDone ? <CheckCircle size={16} className="sm:w-4.5 sm:h-4.5" /> : <Download size={16} className="sm:w-4.5 sm:h-4.5" />}
+              <span className="text-sm sm:text-base">{downloadDone ? 'Téléchargé !' : 'Télécharger'}</span>
+            </button>
+          </div>
 
           <button
             onClick={startNewCapture}
-            className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-semibold text-white/70 border border-white/10 hover:text-white hover:border-white/30 transition-all hover:bg-white/5"
+            className="flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-white/80 border border-white/30 hover:text-white hover:border-white/50 transition-all hover:bg-white/20 backdrop-blur-xl w-full sm:w-auto"
           >
-            <RefreshCw size={20} />
-            Nouvelle capture
+            <RefreshCw size={16} className="sm:w-4.5 sm:h-4.5" />
+            <span className="text-sm sm:text-base">Nouvelle capture</span>
+          </button>
+
+          <button onClick={() => setScreen('welcome')} className="text-white/40 hover:text-white/70 text-xs transition-colors mt-1">
+            Retour à l'accueil
           </button>
         </div>
-
-        <button onClick={() => setScreen('welcome')} className="text-white/30 hover:text-white/60 text-sm transition-colors">
-          Retour à l'accueil
-        </button>
       </div>
     </div>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 
-function UploadingPlaceholder({ progress }: { progress: number }) {
-  return (
-    <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-gradient-to-b from-white/10 to-white/5 border border-white/10 text-center">
-      <div className="relative w-20 h-20">
-        <svg className="-rotate-90" width="80" height="80" viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-          <circle
-            cx="40" cy="40" r="32"
-            fill="none" strokeWidth="6" strokeLinecap="round"
-            className="theme-accent-stroke"
-            strokeDasharray={2 * Math.PI * 32}
-            strokeDashoffset={2 * Math.PI * 32 * (1 - progress / 100)}
-            style={{ transition: 'stroke-dashoffset 0.3s linear' }}
-          />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-white text-base font-bold">
-          {progress}%
-        </span>
-      </div>
-      <div>
-        <p className="text-white/70 text-sm font-medium">Upload en cours...</p>
-        <p className="text-white/30 text-xs mt-1">Le QR code apparaîtra ici</p>
-      </div>
-    </div>
-  );
-}
-
-function ErrorPlaceholder({ onRetry, isOnline }: { onRetry: () => void; isOnline: boolean }) {
-  return (
-    <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-red-500/5 border border-red-500/20 text-center">
-      <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-        <AlertCircle size={32} className="text-red-400" />
-      </div>
-      <div>
-        <p className="text-red-400 text-sm font-medium">Upload échoué</p>
-        <p className="text-white/30 text-xs mt-1">La vidéo est sauvegardée localement</p>
-      </div>
-      {isOnline && (
-        <button
-          onClick={onRetry}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-sm font-medium"
-        >
-          <RotateCcw size={14} /> Réessayer
-        </button>
-      )}
-    </div>
-  );
-}
-
-function OfflinePlaceholder() {
-  return (
-    <div className="flex flex-col items-center gap-4 p-6 rounded-3xl bg-gradient-to-b from-white/10 to-white/5 border border-white/10 text-center">
-      <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-        <CloudOff size={32} className="text-white/30" />
-      </div>
-      <div>
-        <p className="text-white/50 text-sm font-medium">Hors ligne</p>
-        <p className="text-white/30 text-xs mt-1">L'upload reprendra automatiquement<br />dès le retour de la connexion</p>
-      </div>
-    </div>
-  );
-}
