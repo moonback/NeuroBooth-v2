@@ -151,12 +151,12 @@ Fonctionnalités sélectionnées pour un photobooth 360 mobile : capture, virali
 
 | # | Fonctionnalité | Description | Priorité | Effort |
 |---|---|---|:---:|:---:|
-| **1** | **Watermark & logo burn-in** | Incruster texte + logo événement dans la vidéo finale via Canvas/WebCodecs (aujourd'hui : overlay live uniquement) | 🔥 | M |
+<!-- | **1** | **Watermark & logo burn-in** | Incruster texte + logo événement dans la vidéo finale via Canvas/WebCodecs (aujourd'hui : overlay live uniquement) | 🔥 | M | -->
 | **2** | **Partage natif Web Share API** | Bouton unique ouvrant le menu OS : AirDrop, WhatsApp, SMS, Instagram Stories | 🔥 | S |
 | **3** | **Mode Boomerang** | Lecture avant/arrière de la séquence 360, export optimisé 3–5 s | 🔥 | M |
 | **4** | **Recadrage social 9:16** | Export vertical auto-cadré pour Reels, TikTok, Stories (crop intelligent centré) | 🔥 | M |
 | **5** | **Caméra ultra grand-angle (0.5x)** | Sélection de l'objectif wide natif via `advanced: [{ zoom: 0.5 }]` ou `facingMode` multi-lens | 🔥 | M |
-| **6** | **Verrouillage AF/AE** | Bloquer focus et exposition avant rotation pour éviter pompage lumineux | ⭐ | S |
+<!-- | **6** | **Verrouillage AF/AE** | Bloquer focus et exposition avant rotation pour éviter pompage lumineux | ⭐ | S | -->
 | **7** | **Musique de fond** | Bibliothèque de pistes libres de droits, mixage audio à l'export | ⭐ | L |
 
 ---

@@ -250,14 +250,21 @@ export function CaptureScreen() {
         </div>
       </div>
 
-      {/* Logo preview (burned into export via canvas) */}
-      {settings.eventLogo && (
-        <div className="absolute bottom-24 left-4 pointer-events-none z-10 opacity-85">
-          <img
-            src={settings.eventLogo}
-            alt=""
-            className="max-w-[18vw] max-h-[8vh] object-contain drop-shadow-md"
-          />
+      {/* Branding preview — matches canvas burn-in (logo + texte) */}
+      {(settings.eventLogo || (settings.showWatermark && settings.watermarkText)) && (
+        <div className="absolute bottom-24 left-0 px-[3vmin] flex items-end gap-3 pointer-events-none z-10 max-w-[90vw]">
+          {settings.eventLogo && (
+            <img
+              src={settings.eventLogo}
+              alt=""
+              className="max-w-[18vw] max-h-[8vh] object-contain opacity-85 drop-shadow-md shrink-0"
+            />
+          )}
+          {settings.showWatermark && settings.watermarkText && (
+            <span className="text-white/55 text-[clamp(10px,2vw,14px)] font-semibold preview-overlay-text drop-shadow-md leading-tight pb-0.5">
+              {settings.watermarkText}
+            </span>
+          )}
         </div>
       )}
 

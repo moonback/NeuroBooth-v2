@@ -24,6 +24,17 @@ export async function preloadOverlayAssets(
   });
 }
 
+function measureLogo(
+  logoImage: HTMLImageElement,
+  width: number,
+  height: number,
+): { w: number; h: number } {
+  const logoMaxW = width * 0.18;
+  const logoMaxH = height * 0.08;
+  const scale = Math.min(logoMaxW / logoImage.width, logoMaxH / logoImage.height, 1);
+  return { w: logoImage.width * scale, h: logoImage.height * scale };
+}
+
 export function drawVideoOverlays(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -32,33 +43,43 @@ export function drawVideoOverlays(
   logoImage: HTMLImageElement | null,
 ): void {
   const padding = Math.round(Math.min(width, height) * 0.03);
+  const gap = Math.round(padding * 0.6);
+  const bottom = height - padding;
 
-  if (config.watermarkText) {
-    const fontSize = Math.max(12, Math.round(width * 0.022));
-    ctx.save();
-    ctx.font = `600 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 1;
-    ctx.fillText(config.watermarkText, width - padding, padding);
-    ctx.restore();
-  }
+  let logoW = 0;
+  let logoH = 0;
 
   if (logoImage) {
-    const logoMaxW = width * 0.18;
-    const logoMaxH = height * 0.08;
-    const scale = Math.min(logoMaxW / logoImage.width, logoMaxH / logoImage.height, 1);
-    const w = logoImage.width * scale;
-    const h = logoImage.height * scale;
+    const size = measureLogo(logoImage, width, height);
+    logoW = size.w;
+    logoH = size.h;
     const x = padding;
-    const y = height - padding - h;
+    const y = bottom - logoH;
 
     ctx.save();
     ctx.globalAlpha = 0.85;
-    ctx.drawImage(logoImage, x, y, w, h);
+    ctx.drawImage(logoImage, x, y, logoW, logoH);
+    ctx.restore();
+  }
+
+  if (config.watermarkText) {
+    const fontSize = Math.max(11, Math.round(width * 0.02));
+    ctx.save();
+    ctx.font = `600 ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 1;
+    ctx.textBaseline = 'bottom';
+
+    if (logoImage) {
+      ctx.textAlign = 'left';
+      ctx.fillText(config.watermarkText, padding + logoW + gap, bottom);
+    } else {
+      ctx.textAlign = 'right';
+      ctx.fillText(config.watermarkText, width - padding, bottom);
+    }
+
     ctx.restore();
   }
 }

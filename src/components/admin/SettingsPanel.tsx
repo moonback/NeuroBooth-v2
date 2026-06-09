@@ -234,7 +234,7 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
             <ToggleRow
               icon={<ImageIcon size={14} />}
               title="Afficher watermark"
-              sub="Incrusté dans la vidéo exportée (canvas)"
+              sub="Aperçu live pendant la capture ; le texte est toujours incrusté dans l'export"
               checked={settings.showWatermark}
               onChange={v => updateSettings({ showWatermark: v })}
             />
@@ -266,9 +266,9 @@ export function SettingsPanel({ settings, updateSettings, resetSettings, hasUltr
               </div>
             </div>
             <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-            {settings.eventLogo && (
+            {(settings.eventLogo || settings.watermarkText) && (
               <p className="text-white/25 text-[11px] mt-2">
-                Le logo sera incrusté en bas à gauche de la vidéo finale.
+                Logo et texte watermark sont incrustés en bas de la vidéo finale (canvas).
               </p>
             )}
           </div>

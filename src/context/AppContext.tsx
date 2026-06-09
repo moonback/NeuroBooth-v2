@@ -411,8 +411,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let processedBlob = blob;
     let newDuration = duration;
 
-    const needsBurnIn =
-      (settings.showWatermark && !!settings.watermarkText) || !!settings.eventLogo;
+    const watermarkText = settings.watermarkText.trim();
+    const needsBurnIn = !!watermarkText || !!settings.eventLogo;
     const needsProcessing = settings.slowMotionEnabled || needsBurnIn;
 
     if (needsProcessing) {
@@ -431,7 +431,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           {
             overlays: needsBurnIn
               ? {
-                  watermarkText: settings.showWatermark ? settings.watermarkText : undefined,
+                  watermarkText: watermarkText || undefined,
                   eventLogoDataUrl: settings.eventLogo || undefined,
                 }
               : undefined,
