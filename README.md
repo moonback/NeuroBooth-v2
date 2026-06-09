@@ -1,6 +1,6 @@
-# NeuroBooth - Photobooth 360°
+# NeuroBooth - NeuroBooth 360°
 
-Une application de photobooth 360° moderne, fonctionnelle et élégante, avec support hors-ligne et synchronisation cloud via Supabase.
+Une application de NeuroBooth 360° moderne, fonctionnelle et élégante, avec support hors-ligne et synchronisation cloud via Supabase.
 
 ## Fonctionnalités
 

@@ -127,7 +127,7 @@ export function PreviewScreen() {
     if (currentCapture.videoUrl && navigator.share) {
       try {
         logger.info('Preview: using native share API');
-        await navigator.share({ url: currentCapture.videoUrl, title: 'Mon Photobooth 360°' });
+        await navigator.share({ url: currentCapture.videoUrl, title: 'Mon NeuroBooth 360°' });
       } catch (error) {
         logger.warn('Preview: native share failed', { error: (error as Error).message });
       }

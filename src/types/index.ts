@@ -63,7 +63,7 @@ export const QUALITY_CONSTRAINTS: Record<VideoQuality, MediaTrackConstraints> = 
 };
 
 export const DEFAULT_SETTINGS: Settings = {
-  eventName: 'Photobooth 360',
+  eventName: 'NeuroBooth 360',
   eventLogo: '',
   captureDuration: 10,
   countdownDuration: 3,

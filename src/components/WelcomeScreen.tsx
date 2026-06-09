@@ -96,7 +96,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
           </h1>
           <p className="text-white/40 text-base tracking-widest uppercase flex items-center justify-center gap-2">
             <Zap size={16} className="text-yellow-400" />
-            Photobooth 360°
+            NeuroBooth 360°
           </p>
         </div>
 
@@ -119,7 +119,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
 
       {/* Bottom */}
       <div className="z-10 text-white/15 text-xs">
-        Photobooth 360 &copy; {new Date().getFullYear()}
+        NeuroBooth 360 &copy; {new Date().getFullYear()}
       </div>
     </div>
   );

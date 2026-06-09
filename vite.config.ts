@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'Photobooth 360',
+        name: 'NeuroBooth 360',
         short_name: 'Photobooth',
-        description: 'Application photobooth 360 pour evenements',
+        description: 'Application NeuroBooth 360 pour evenements',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
         display: 'fullscreen',
