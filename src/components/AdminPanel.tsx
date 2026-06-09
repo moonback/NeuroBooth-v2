@@ -16,7 +16,7 @@ export function AdminPanel() {
   };
 
   return (
-    <div className="theme-bg min-h-screen flex flex-col">
+    <div className="theme-bg screen-layout flex flex-col !pb-0">
       <AdminHeader onBack={handleBack} isOnline={isOnline} />
       <AdminTabBar activeTab={tab} onTabChange={setTab} />
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full">

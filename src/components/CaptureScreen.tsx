@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useMotor } from '../hooks/useMotor';
 import { FlipHorizontal, Square, Mic, MicOff, Maximize2, Crosshair } from 'lucide-react';
 import { logger } from '../lib/logger';
+import { haptics } from '../lib/haptics';
 
 export function CaptureScreen() {
   const {
@@ -44,6 +45,7 @@ export function CaptureScreen() {
     logger.info('Recording duration calculated', { duration });
 
     if (blob) {
+      haptics.captureEnd();
       logger.info('Proceeding to finish capture');
       await finishCapture(blob, duration);
     } else {
@@ -98,7 +100,7 @@ export function CaptureScreen() {
   const remaining = Math.max(0, settings.captureDuration - elapsed);
 
   return (
-    <div className="theme-bg relative flex flex-col items-center justify-center min-h-screen w-full overflow-hidden">
+    <div className="theme-bg screen-layout--immersive relative flex flex-col items-center justify-center w-full overflow-hidden">
       {/* Video preview */}
       <div className="absolute inset-0 bg-black">
         <video
@@ -110,35 +112,35 @@ export function CaptureScreen() {
           style={{ transform: currentCameraFacing === 'user' ? 'scaleX(-1)' : 'none' }}
         />
         {/* Dark overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+        <div className="absolute inset-0 overlay-gradient-bottom bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+        <div className="absolute inset-0 overlay-gradient-top bg-gradient-to-b from-black/40 via-transparent to-transparent pointer-events-none" />
       </div>
 
       {/* Error state */}
       {cameraError && (
         <div className="relative z-10 text-center p-8">
           <p className="text-red-400 text-xl mb-4">Erreur caméra: {cameraError}</p>
-          <button onClick={() => setScreen('welcome')} className="btn-secondary">
+          <button onClick={() => setScreen('welcome')} className="touch-target px-6 rounded-full border border-white/30 text-white">
             Retour
           </button>
         </div>
       )}
 
       {/* Top HUD */}
-      <div className="absolute top-0 left-0 right-0 p-6 flex items-center justify-between z-10">
-        {/* Recording indicator */}
+      <div className="absolute top-0 left-0 right-0 hud-top flex items-center justify-between z-10">
         {phase === 'recording' && (
-          <div className="flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-4 py-2 rounded-full">
+          <div className="flex items-center gap-2 bg-red-600/90 backdrop-blur-sm px-4 py-2 rounded-full hud-badge hud-text">
             <div className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
             <span className="text-white font-semibold text-sm tracking-wide">REC</span>
           </div>
         )}
         {phase === 'starting' && (
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hud-badge hud-text">
             <span className="text-white text-sm">Initialisation...</span>
           </div>
         )}
         {phase === 'stopping' && (
-          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+          <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hud-badge hud-text">
             <span className="text-white text-sm">Traitement...</span>
           </div>
         )}
@@ -160,7 +162,7 @@ export function CaptureScreen() {
             ? <Mic size={18} className="text-white/60" />
             : <MicOff size={18} className="text-white/30" />}
           {settings.showWatermark && settings.watermarkText && (
-            <span className="text-white/40 text-xs">{settings.watermarkText}</span>
+            <span className="text-white/40 text-xs hud-text preview-overlay-text">{settings.watermarkText}</span>
           )}
         </div>
       </div>
@@ -192,10 +194,10 @@ export function CaptureScreen() {
       )}
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 flex items-center justify-between z-10">
+      <div className="absolute bottom-0 left-0 right-0 hud-bottom flex items-center justify-between z-10">
         <button
           onClick={() => setScreen('welcome')}
-          className="px-5 py-2 rounded-full border border-white/30 text-white/60 hover:text-white hover:border-white/60 transition-colors text-sm backdrop-blur-sm"
+          className="touch-target px-5 rounded-full border border-white/30 text-white/60 hover:text-white hover:border-white/60 transition-colors text-sm backdrop-blur-sm hud-text"
         >
           Annuler
         </button>
@@ -214,7 +216,7 @@ export function CaptureScreen() {
           {hasMultipleCameras && (
             <button
               onClick={switchCamera}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white transition-all"
+              className="touch-target rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white transition-all"
               aria-label="Changer de caméra"
             >
               <FlipHorizontal size={22} />
@@ -223,7 +225,7 @@ export function CaptureScreen() {
           {phase === 'recording' && (
             <button
               onClick={handleStop}
-              className="p-4 rounded-full bg-red-600/90 hover:bg-red-500 backdrop-blur-sm text-white transition-all hover:scale-105 active:scale-95"
+              className="touch-target rounded-full bg-red-600/90 hover:bg-red-500 backdrop-blur-sm text-white transition-all hover:scale-105 active:scale-95"
               aria-label="Arrêter"
             >
               <Square size={22} fill="white" />

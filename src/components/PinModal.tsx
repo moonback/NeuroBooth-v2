@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lock, X, Eye, EyeOff } from 'lucide-react';
+import { haptics } from '../lib/haptics';
 
 interface PinModalProps {
   onClose: () => void;
@@ -18,6 +19,7 @@ export function PinModal({ onClose, onSuccess }: PinModalProps) {
     if (unlockAdmin(pin)) {
       onSuccess();
     } else {
+      haptics.error();
       setError(true);
       setPin('');
       setTimeout(() => setError(false), 1500);
@@ -29,11 +31,13 @@ export function PinModal({ onClose, onSuccess }: PinModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm screen-layout"
+    >
       <div className={`relative w-full max-w-sm bg-[#1a1a1a] border rounded-3xl p-8 shadow-2xl transition-all ${
         error ? 'border-red-500/60 animate-shake' : 'border-white/10'
       }`}>
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/30 hover:text-white/70">
+        <button onClick={onClose} className="touch-target absolute top-4 right-4 text-white/30 hover:text-white/70" aria-label="Fermer">
           <X size={20} />
         </button>
 
@@ -60,7 +64,7 @@ export function PinModal({ onClose, onSuccess }: PinModalProps) {
                 autoFocus
               />
               <button type="button" onClick={() => setShowPin(s => !s)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                className="touch-target absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
                 {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
@@ -71,12 +75,12 @@ export function PinModal({ onClose, onSuccess }: PinModalProps) {
                 d === '' ? <div key={i} /> :
                 d === '⌫' ? (
                   <button key={i} type="button" onClick={() => setPin(p => p.slice(0,-1))}
-                    className="py-4 rounded-2xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-colors text-lg font-medium">
+                    className="touch-target rounded-2xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 transition-colors text-lg font-medium">
                     ⌫
                   </button>
                 ) : (
                   <button key={i} type="button" onClick={() => handleDigit(d)}
-                    className="py-4 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-lg font-semibold">
+                    className="touch-target rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors text-lg font-semibold">
                     {d}
                   </button>
                 )
@@ -86,7 +90,7 @@ export function PinModal({ onClose, onSuccess }: PinModalProps) {
             {error && <p className="text-red-400 text-sm text-center">Code incorrect</p>}
 
             <button type="submit"
-              className="w-full py-4 rounded-2xl theme-accent-bg text-white font-bold text-lg hover:opacity-90 active:scale-95 transition-all">
+              className="cta-button w-full rounded-2xl theme-accent-bg text-white font-bold text-lg hover:opacity-90 active:scale-95 transition-all">
               Confirmer
             </button>
           </form>

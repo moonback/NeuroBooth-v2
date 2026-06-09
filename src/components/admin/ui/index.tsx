@@ -15,11 +15,11 @@ export function Toggle({ checked, onChange }: { checked: boolean; onChange: (val
   return (
     <button
       onClick={() => onChange(!checked)}
-      className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${checked ? 'theme-accent-bg' : 'bg-white/10'}`}
+      className={`touch-target relative w-14 h-8 rounded-full transition-colors duration-200 ${checked ? 'theme-accent-bg' : 'bg-white/10'}`}
       role="switch"
       aria-checked={checked}
     >
-      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200 ${checked ? 'left-6' : 'left-0.5'}`} />
+      <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-all duration-200 ${checked ? 'left-7' : 'left-1'}`} />
     </button>
   );
 }
@@ -31,17 +31,17 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ onBack, isOnline }: AdminHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/10">
-      <div className="flex items-center gap-2 sm:gap-4">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
+          className="touch-target flex items-center gap-2 text-white/50 hover:text-white transition-colors -ml-2"
         >
           <ArrowLeft size={20} />
-          <span className="text-sm hidden sm:inline">Accueil</span>
+          <span className="text-sm">Accueil</span>
         </button>
-        <span className="text-white/20 hidden sm:inline">/</span>
-        <h1 className="text-white font-bold text-lg">Panneau Admin</h1>
+        <span className="text-white/20">/</span>
+        <h1 className="text-white font-bold text-lg">Admin</h1>
       </div>
 
       <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ export function AdminHeader({ onBack, isOnline }: AdminHeaderProps) {
 
         <button
           onClick={onBack}
-          className="p-2 rounded-full text-white/30 hover:text-white/70 transition-colors"
+          className="touch-target rounded-full text-white/30 hover:text-white/70 transition-colors"
           aria-label="Verrouiller"
         >
           <Lock size={18} />
@@ -81,19 +81,19 @@ interface AdminTabBarProps {
 
 export function AdminTabBar({ activeTab, onTabChange }: AdminTabBarProps) {
   return (
-    <div className="flex gap-1 px-4 sm:px-6 pt-4 overflow-x-auto scrollbar-hide">
+    <div className="flex gap-1 px-4 pt-3 overflow-x-auto scrollbar-hide">
       {ADMIN_TABS.map(t => (
         <button
           key={t.id}
           onClick={() => onTabChange(t.id)}
-          className={`flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+          className={`touch-target flex items-center gap-2 px-4 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
             activeTab === t.id
               ? 'theme-accent-bg text-white'
               : 'text-white/40 hover:text-white/70 hover:bg-white/5'
           }`}
         >
           {t.icon}
-          <span className="hidden sm:inline">{t.label}</span>
+          <span>{t.label}</span>
         </button>
       ))}
     </div>
@@ -162,7 +162,7 @@ export function AdminButton({ children, variant = 'secondary', className = '', .
 
   return (
     <button
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-colors ${variantClasses[variant]} ${className}`}
+      className={`touch-target flex items-center gap-2 px-4 rounded-xl text-sm transition-colors ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {children}

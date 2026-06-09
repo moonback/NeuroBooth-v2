@@ -53,5 +53,10 @@ export interface SettingsRow {
   ultra_wide_enabled: boolean;
   gyro_stabilization_enabled: boolean;
   gyro_stabilization_strength: number;
+  brand_accent_color: string;
+  brand_bg_color: string;
+  display_font: string;
+  screensaver_enabled: boolean;
+  screensaver_delay_seconds: number;
   updated_at: string;
 }
