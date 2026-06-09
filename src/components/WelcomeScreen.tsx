@@ -1,13 +1,12 @@
 import { useApp } from '../context/AppContext';
 import {
   Camera,
-  Settings,
   Wifi,
   WifiOff,
   ChevronRight,
   Zap,
 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface WelcomeScreenProps {
   onAdmin: () => void;
@@ -16,6 +15,10 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   const { settings, startNewCapture, isOnline, attachStreamToVideo, currentCameraFacing } = useApp();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [tapCount, setTapCount] = useState(0);
+  const lastTapTimeRef = useRef(0);
+  const GESTURE_TIMEOUT = 1000; // 1 second timeout between taps
+  const REQUIRED_TAPS = 5;
 
   useEffect(() => {
     attachStreamToVideo(videoRef.current);
@@ -23,6 +26,23 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       attachStreamToVideo(null);
     };
   }, [attachStreamToVideo]);
+
+  const handleSecretTap = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTimeRef.current;
+    lastTapTimeRef.current = now;
+
+    if (timeSinceLastTap > GESTURE_TIMEOUT) {
+      setTapCount(1);
+    } else {
+      const newCount = tapCount + 1;
+      setTapCount(newCount);
+      if (newCount >= REQUIRED_TAPS) {
+        onAdmin();
+        setTapCount(0);
+      }
+    }
+  };
 
   return (
     <div className="welcome-screen theme-bg flex flex-col items-center justify-between min-h-screen w-full p-6 relative overflow-hidden">
@@ -57,13 +77,12 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
             {isOnline ? 'En ligne' : 'Hors ligne'}
           </span>
         </div>
+        {/* Secret gesture area */}
         <button
-          onClick={onAdmin}
-          className="p-3 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-          aria-label="Panneau admin"
-        >
-          <Settings size={20} />
-        </button>
+          onClick={handleSecretTap}
+          className="p-3 rounded-full"
+          aria-label="Secret gesture zone"
+        />
       </div>
 
       {/* Center content */}
