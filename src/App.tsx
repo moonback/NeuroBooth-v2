@@ -7,9 +7,9 @@ import { PreviewScreen } from './components/PreviewScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { PinModal } from './components/PinModal';
 import { ProcessingModal } from './components/ProcessingModal';
-import { Download } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 
-function AppInner({ showInstallPrompt, onInstall }: { showInstallPrompt: boolean; onInstall: () => void }) {
+function AppInner({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { showInstallPrompt: boolean; onInstall: () => void; onCloseInstallPrompt: () => void }) {
   const { screen, setScreen, settings, adminUnlocked } = useApp();
   const [showPin, setShowPin] = useState(false);
 
@@ -42,7 +42,7 @@ function AppInner({ showInstallPrompt, onInstall }: { showInstallPrompt: boolean
       
       {/* PWA Install Prompt */}
       {showInstallPrompt && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-bounce-in">
+        <div className="fixed top-4 right-4 z-50 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-2xl flex items-center gap-3 animate-bounce-in">
           <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
             <Download size={20} className="text-purple-400" />
           </div>
@@ -56,6 +56,12 @@ function AppInner({ showInstallPrompt, onInstall }: { showInstallPrompt: boolean
           >
             Installer
           </button>
+          <button 
+            onClick={onCloseInstallPrompt}
+            className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <X size={16} className="text-white/60" />
+          </button>
         </div>
       )}
       
@@ -64,10 +70,10 @@ function AppInner({ showInstallPrompt, onInstall }: { showInstallPrompt: boolean
   );
 }
 
-export default function App({ showInstallPrompt, onInstall }: { showInstallPrompt: boolean; onInstall: () => void }) {
+export default function App({ showInstallPrompt, onInstall, onCloseInstallPrompt }: { showInstallPrompt: boolean; onInstall: () => void; onCloseInstallPrompt: () => void }) {
   return (
     <AppProvider>
-      <AppInner showInstallPrompt={showInstallPrompt} onInstall={onInstall} />
+      <AppInner showInstallPrompt={showInstallPrompt} onInstall={onInstall} onCloseInstallPrompt={onCloseInstallPrompt} />
     </AppProvider>
   );
 }

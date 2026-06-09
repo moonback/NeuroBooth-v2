@@ -34,7 +34,11 @@ function PWABootstrap() {
 
   return (
     <StrictMode>
-      <App showInstallPrompt={showInstallPrompt} onInstall={handleInstall} />
+      <App 
+        showInstallPrompt={showInstallPrompt} 
+        onInstall={handleInstall} 
+        onCloseInstallPrompt={() => setShowInstallPrompt(false)} 
+      />
     </StrictMode>
   );
 }
