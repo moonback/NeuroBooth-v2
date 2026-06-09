@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Camera } from 'lucide-react';
+import { haptics } from '../lib/haptics';
 
 export function CountdownScreen() {
   const { settings, setScreen, requestGyroAccess, recalibrateGyro } = useApp();
@@ -38,10 +39,12 @@ export function CountdownScreen() {
     }
     playBeep(440, 0.15);
     if (count === 0) {
+      haptics.countdownGo();
       playBeep(880, 0.3);
       const t = setTimeout(() => setScreen('capture'), 300);
       return () => clearTimeout(t);
     }
+    haptics.countdownTick();
     const t = setTimeout(() => setCount(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [count]);
@@ -50,14 +53,7 @@ export function CountdownScreen() {
   const circumference = 2 * Math.PI * 90;
 
   return (
-    <div
-      className="theme-bg flex flex-col items-center justify-center w-full gap-6 p-4"
-      style={{
-        minHeight: '100dvh', // dvh pour mobile (évite la barre d'adresse)
-        paddingTop: 'max(1rem, env(safe-area-inset-top))',
-        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
-      }}
-    >
+    <div className="theme-bg screen-layout flex flex-col items-center justify-center w-full gap-6 relative">
       {/* Anneaux décoratifs — contenus avec overflow-hidden sur le parent */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
         <div
@@ -73,7 +69,7 @@ export function CountdownScreen() {
       {/* Header */}
       <div className="relative z-10 text-center animate-bounce-in">
         <Camera size={28} className="text-white/30 mx-auto mb-3" />
-        <p className="text-white/70 text-lg font-semibold tracking-wider uppercase leading-tight">
+        <p className="text-white/70 text-lg font-semibold tracking-wider uppercase leading-tight hud-text">
           Préparez-vous...
         </p>
       </div>
@@ -139,11 +135,7 @@ export function CountdownScreen() {
       {/* Bouton annuler — zone de tap généreuse */}
       <button
         onClick={() => setScreen('welcome')}
-        className="relative z-10 px-8 rounded-full border border-white/25 bg-white/5 text-white/50 hover:text-white hover:border-white/50 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm font-medium backdrop-blur-sm"
-        style={{
-          minHeight: '44px',   // hauteur de tap recommandée Apple/Google
-          minWidth: '120px',
-        }}
+        className="touch-target relative z-10 px-8 rounded-full border border-white/25 bg-white/5 text-white/50 hover:text-white hover:border-white/50 hover:bg-white/10 active:scale-95 transition-all duration-300 text-sm font-medium backdrop-blur-sm screen-action-zone"
       >
         Annuler
       </button>

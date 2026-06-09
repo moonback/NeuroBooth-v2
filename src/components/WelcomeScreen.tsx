@@ -7,6 +7,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { haptics } from '../lib/haptics';
 
 interface WelcomeScreenProps {
   onAdmin: () => void;
@@ -41,10 +42,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       setVisualTaps(prev => prev.filter(t => t.id !== id));
     }, 600);
 
-    // Add haptic feedback
-    if (navigator.vibrate) {
-      navigator.vibrate(20); // 20ms vibration
-    }
+    haptics.tap();
 
     // Handle gesture logic
     const now = Date.now();
@@ -57,10 +55,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       const newCount = tapCount + 1;
       setTapCount(newCount);
       if (newCount >= REQUIRED_TAPS) {
-        // Stronger haptic feedback for success
-        if (navigator.vibrate) {
-          navigator.vibrate([50, 30, 50]);
-        }
+        haptics.adminUnlock();
         onAdmin();
         setTapCount(0);
       }
@@ -68,7 +63,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
   };
 
   return (
-    <div className="welcome-screen theme-bg flex flex-col items-center justify-between min-h-screen w-full p-6 relative overflow-hidden">
+    <div className="welcome-screen theme-bg screen-layout--immersive flex flex-col items-center justify-between w-full relative overflow-hidden">
       {/* Video preview background */}
       <div className="absolute inset-0 bg-black">
         <video
@@ -91,8 +86,8 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       </div>
 
       {/* Top bar */}
-      <div className="w-full flex justify-between items-center z-10 relative">
-        <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+      <div className="w-full flex justify-between items-center z-10 relative hud-top">
+        <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hud-badge hud-text">
           {isOnline
             ? <Wifi size={14} className="text-emerald-400" />
             : <WifiOff size={14} className="text-yellow-400" />}
@@ -103,7 +98,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
         {/* Secret gesture area - centered top */}
         <button
           onClick={handleSecretTap}
-          className="absolute left-1/2 -translate-x-1/2 px-6 py-2 rounded-full relative overflow-visible border border-transparent hover:border-white/10 transition-all"
+          className="touch-target absolute left-1/2 -translate-x-1/2 rounded-full relative overflow-visible border border-transparent hover:border-white/10 transition-all"
           aria-label="Secret gesture zone"
         >
           {/* Tap count indicator */}
@@ -134,7 +129,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
       </div>
 
       {/* Center content */}
-      <div className="flex flex-col items-center gap-10 z-10 flex-1 justify-center">
+      <div className="screen-content flex flex-col items-center gap-10 z-10">
         {/* Logo */}
         <div className="relative animate-float">
           {settings.eventLogo ? (
@@ -158,7 +153,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
 
         {/* Event name */}
         <div className="text-center animate-bounce-in">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight mb-2">
+          <h1 className="text-4xl font-black tracking-tight text-white leading-tight mb-2 preview-overlay-text">
             {settings.eventName}
           </h1>
           <p className="text-white/40 text-base tracking-widest uppercase flex items-center justify-center gap-2">
@@ -184,8 +179,7 @@ export function WelcomeScreen({ onAdmin }: WelcomeScreenProps) {
         </p>
       </div>
 
-      {/* Bottom */}
-      <div className="z-10 text-white/15 text-xs">
+      <div className="z-10 text-white/15 text-xs screen-action-zone">
         NeuroBooth 360 &copy; {new Date().getFullYear()}
       </div>
     </div>
