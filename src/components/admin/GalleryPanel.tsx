@@ -85,6 +85,57 @@ export function GalleryPanel() {
     a.click();
   }, []);
 
+  const handleShare = useCallback(async (c: CaptureRecord) => {
+    let didShare = false;
+    const shareText = 'Regarde ma vidéo NeuroBooth 360° !';
+    const shareTitle = 'Mon NeuroBooth 360°';
+
+    if (navigator.share) {
+      try {
+        if (c.videoBlob && 'canShare' in navigator) {
+          const fileName = `photobooth-360-${c.id.slice(0, 8)}.${c.videoBlob.type === 'video/mp4' ? 'mp4' : 'webm'}`;
+          const shareFile = new File([c.videoBlob], fileName, {
+            type: c.videoBlob.type || 'video/webm',
+          });
+
+          if (navigator.canShare({ files: [shareFile] })) {
+            await navigator.share({
+              title: shareTitle,
+              text: shareText,
+              files: [shareFile],
+            });
+            didShare = true;
+          }
+        }
+
+        if (!didShare && c.videoUrl) {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: c.videoUrl,
+          });
+          didShare = true;
+        }
+      } catch (error) {
+        console.warn('Gallery: native share failed', error);
+      }
+    }
+
+    if (!didShare && c.videoUrl && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(c.videoUrl);
+        alert('Lien copié dans le presse-papiers. Vous pouvez maintenant le coller dans votre application de messagerie.');
+        didShare = true;
+      } catch {
+        console.warn('Gallery: clipboard fallback failed');
+      }
+    }
+
+    if (didShare) {
+      await markShared(c.id);
+    }
+  }, [markShared]);
+
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -243,7 +294,10 @@ export function GalleryPanel() {
                 <AdminButton
                   size="sm"
                   variant={selected.shared ? 'secondary' : 'primary'}
-                  onClick={() => { markShared(selected.id); setSelected(s => s ? { ...s, shared: true } : null); }}
+                  onClick={async () => {
+                    await handleShare(selected);
+                    setSelected(s => s ? { ...s, shared: true } : null);
+                  }}
                 >
                   {selected.shared ? <><Check size={14} /> Partagé</> : <><Share2 size={14} /> Partager</>}
                 </AdminButton>

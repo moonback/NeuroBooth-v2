@@ -180,16 +180,57 @@ export function PreviewScreen() {
 
   const handleShare = useCallback(async () => {
     if (!currentCapture) return;
-    if (currentCapture.videoUrl && navigator.share) {
+
+    let didShare = false;
+    const shareText = 'Regarde ma vidéo NeuroBooth 360° !';
+    const shareTitle = 'Mon NeuroBooth 360°';
+
+    if (navigator.share) {
       try {
-        await navigator.share({ url: currentCapture.videoUrl, title: 'Mon NeuroBooth 360°' });
+        if (currentCapture.videoBlob && 'canShare' in navigator) {
+          const fileName = `photobooth-360-${currentCapture.id.slice(0, 8)}.${currentCapture.videoBlob.type === 'video/mp4' ? 'mp4' : 'webm'}`;
+          const shareFile = new File([currentCapture.videoBlob], fileName, {
+            type: currentCapture.videoBlob.type || 'video/webm',
+          });
+
+          if (navigator.canShare({ files: [shareFile] })) {
+            await navigator.share({
+              title: shareTitle,
+              text: shareText,
+              files: [shareFile],
+            });
+            didShare = true;
+          }
+        }
+
+        if (!didShare && currentCapture.videoUrl) {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: currentCapture.videoUrl,
+          });
+          didShare = true;
+        }
       } catch (error) {
         logger.warn('Preview: native share failed', { error: (error as Error).message });
       }
     }
-    await markShared(currentCapture.id);
-    haptics.shareSuccess();
-    setShared(true);
+
+    if (!didShare && currentCapture.videoUrl && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(currentCapture.videoUrl);
+        alert('Lien copié dans le presse-papiers. Vous pouvez maintenant le coller dans votre application de messagerie.');
+        didShare = true;
+      } catch {
+        logger.warn('Preview: clipboard fallback failed');
+      }
+    }
+
+    if (didShare) {
+      await markShared(currentCapture.id);
+      haptics.shareSuccess();
+      setShared(true);
+    }
   }, [currentCapture, markShared]);
 
   if (!currentCapture) {
