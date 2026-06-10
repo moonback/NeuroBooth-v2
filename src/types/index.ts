@@ -2,7 +2,7 @@ export type AppScreen = 'welcome' | 'countdown' | 'capture' | 'preview' | 'admin
 
 export type VideoQuality = 'low' | 'medium' | 'high' | '4k';
 
-export type AppTheme = 'dark' | 'neon' | 'elegant' | 'party' | 'brand';
+export type AppTheme = 'dark' | 'neon' | 'elegant' | 'party' | 'brand' | 'desktop';
 
 export type DisplayFont = 'inter' | 'satoshi' | 'clash';
 

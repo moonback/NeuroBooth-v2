@@ -175,6 +175,16 @@ body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
   --ring-color: rgba(244,63,94,0.08);
 }
 
+/* ===== Theme: Desktop ===== */
+.theme-desktop {
+  --accent: #38bdf8;
+  --accent-glow: rgba(56,189,248,0.3);
+  --accent-dim: rgba(56,189,248,0.14);
+  --bg: #050816;
+  --bg-card: #111827;
+  --ring-color: rgba(56,189,248,0.08);
+}
+
 /* ===== Theme: Brand (vars injectées depuis l'admin) ===== */
 .theme-brand {
   --accent: #3b82f6;

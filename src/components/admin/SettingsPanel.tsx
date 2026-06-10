@@ -3,7 +3,7 @@ import { Settings, AppTheme, VideoQuality, CameraFacing, DisplayFont } from '../
 import {
   Upload, RotateCcw, Palette, Zap, Crown, Sparkles, Check,
   Calendar, Image as ImageIcon, Camera, Volume2,
-  FastForward, Shield, Lock, Maximize2, Crosshair, Brush, Type, Moon,
+  FastForward, Shield, Lock, Maximize2, Crosshair, Brush, Type, Moon, Monitor,
 } from 'lucide-react';
 import { hexToRgba } from '../../lib/brandTheme';
 import {
@@ -37,6 +37,7 @@ const THEMES: {
   description: string;
 }[] = [
   { value: 'dark', label: 'Sombre', accent: '#3b82f6', glow: 'rgba(59,130,246,0.15)', icon: <Palette size={15} />, description: 'Minimaliste & professionnel' },
+  { value: 'desktop', label: 'Desktop', accent: '#38bdf8', glow: 'rgba(56,189,248,0.15)', icon: <Monitor size={15} />, description: 'Interface grand écran / web' },
   { value: 'neon', label: 'Neon', accent: '#22c55e', glow: 'rgba(34,197,94,0.15)', icon: <Zap size={15} />, description: 'Futuriste, tons verts' },
   { value: 'elegant', label: 'Élégant', accent: '#f5c842', glow: 'rgba(245,200,66,0.15)', icon: <Crown size={15} />, description: 'Luxueux, accents dorés' },
   { value: 'party', label: 'Party', accent: '#a855f7', glow: 'rgba(168,85,247,0.15)', icon: <Sparkles size={15} />, description: 'Fun, dégradé animé' },
